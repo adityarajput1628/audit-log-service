@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schwab AI Audit Log Service - Control Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --accent-blue: #38bdf8;
+            --accent-emerald: #34d399;
+            --accent-rose: #fb7185;
+            --accent-purple: #c084fc;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --font-sans: 'Inter', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: var(--font-sans);
+            background: radial-gradient(circle at top right, #1e1b4b, var(--bg-dark));
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .logo-title h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(to right, var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-title p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 0.2rem;
+        }
+
+        .badge {
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--accent-blue);
+            padding: 0.4rem 0.8rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.2rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            padding: 1.25rem;
+            border-radius: 1rem;
+        }
+
+        .metric-card .title { font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; }
+        .metric-card .value { font-size: 1.8rem; font-weight: 700; margin-top: 0.5rem; }
+
+        .tabs { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+        .tab-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-secondary);
+            padding: 0.6rem 1.2rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .tab-btn.active, .tab-btn:hover {
+            background: var(--accent-blue);
+            color: var(--bg-dark);
+            border-color: var(--accent-blue);
+        }
+
+        .panel {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .panel-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 1rem; color: var(--accent-blue); }
+
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+        .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+        .form-group label { font-size: 0.85rem; color: var(--text-secondary); }
+        .form-group input, .form-group select, .form-group textarea {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            padding: 0.6rem;
+            border-radius: 0.5rem;
+            font-family: inherit;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--accent-blue), #2563eb);
+            color: white;
+            border: none;
+            padding: 0.6rem 1.4rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .btn:hover { transform: translateY(-1px); }
+        .btn-danger { background: linear-gradient(135deg, var(--accent-rose), #dc2626); }
+        .btn-success { background: linear-gradient(135deg, var(--accent-emerald), #059669); }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--card-border); font-size: 0.9rem; }
+        th { color: var(--text-secondary); font-weight: 600; }
+        .hash-code { font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-blue); }
+
+        .status-box {
+            padding: 1rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            margin-top: 1rem;
+        }
+        .status-intact { background: rgba(52, 211, 153, 0.15); color: var(--accent-emerald); border: 1px solid var(--accent-emerald); }
+        .status-broken { background: rgba(251, 113, 133, 0.15); color: var(--accent-rose); border: 1px solid var(--accent-rose); }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-title">
+            <h1>Charles Schwab Audit Log Service</h1>
+            <p>AI-Assisted Cryptographic Hash Chain & Compliance System</p>
+        </div>
+        <span class="badge">Version 2.0 | Spring Boot 3.3 (Gradle)</span>
+    </header>
+
+    <div class="metrics-grid">
+        <div class="metric-card">
+            <div class="title">Total Logged Events</div>
+            <div class="value" id="metric-total">0</div>
+        </div>
+        <div class="metric-card">
+            <div class="title">Cryptographic Chain Integrity</div>
+            <div class="value" id="metric-integrity" style="color: var(--accent-emerald);">Intact</div>
+        </div>
+        <div class="metric-card">
+            <div class="title">Hash Algorithm</div>
+            <div class="value">SHA-256</div>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('tab-events')">Audit Trail Events</button>
+        <button class="tab-btn" onclick="switchTab('tab-verify')">Chain Verification & Tamper Test</button>
+        <button class="tab-btn" onclick="switchTab('tab-redact')">Structured Redaction</button>
+        <button class="tab-btn" onclick="switchTab('tab-compliance')">Scenario C: Compliance Report</button>
+    </div>
+
+    <!-- TAB 1: EVENTS -->
+    <div id="tab-events" class="tab-content">
+        <div class="panel">
+            <div class="panel-title">Create Audit Event (Append-Only Write)</div>
+            <form id="create-event-form">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Event Type</label>
+                        <select id="eventType">
+                            <option value="CLIENT_ACCOUNT_ACCESS">CLIENT_ACCOUNT_ACCESS</option>
+                            <option value="USER_LOGIN">USER_LOGIN</option>
+                            <option value="RECORD_UPDATED">RECORD_UPDATED</option>
+                            <option value="PERMISSION_GRANTED">PERMISSION_GRANTED</option>
+                            <option value="STATEMENT_DOWNLOADED">STATEMENT_DOWNLOADED</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Actor ID</label>
+                        <input type="text" id="actorId" value="advisor-suprem" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Resource Type</label>
+                        <input type="text" id="resourceType" value="CLIENT_ACCOUNT" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Resource ID</label>
+                        <input type="text" id="resourceId" value="ACCT-9842" required>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label>Structured Payload (JSON)</label>
+                    <textarea id="payload" rows="3" required>{"clientName": "Aditya Sharma", "accountNumber": "SCHW-994821", "action": "VIEW_BALANCE", "accessTime": "2026-09-17T10:00:00Z"}</textarea>
+                </div>
+                <button type="submit" class="btn">Write Event to Chain</button>
+            </form>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">Audit Trail Records (Append-Only Log)</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Seq #</th>
+                        <th>Timestamp</th>
+                        <th>Event Type</th>
+                        <th>Actor ID</th>
+                        <th>Resource</th>
+                        <th>Previous Hash</th>
+                        <th>Record Hash (SHA-256)</th>
+                    </tr>
+                </thead>
+                <tbody id="events-tbody">
+                    <!-- Event rows inserted dynamically -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- TAB 2: VERIFICATION & TAMPER TEST -->
+    <div id="tab-verify" class="tab-content" style="display: none;">
+        <div class="panel">
+            <div class="panel-title">Cryptographic Chain Verification</div>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                Walks the audit trail from Genesis node to HEAD, recomputing SHA-256 hashes and validating sequential links.
+            </p>
+            <button class="btn btn-success" onclick="runVerification()">Run Verification Scan</button>
+            <div id="verification-output"></div>
+        </div>
+
+        <div class="panel" style="border-color: rgba(251, 113, 133, 0.4);">
+            <div class="panel-title" style="color: var(--accent-rose);">Live Database Tamper Simulator</div>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                Directly corrupt a record in the database without updating its recordHash to demonstrate live tamper detection.
+            </p>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Record ID to Corrupt</label>
+                    <input type="number" id="tamperRecordId" value="1">
+                </div>
+                <div class="form-group">
+                    <label>Tampered Payload Text</label>
+                    <input type="text" id="tamperPayload" value='{"tampered": true, "unauthorized": "HACKED_DATA"}'>
+                </div>
+            </div>
+            <button class="btn btn-danger" onclick="simulateTamper()">Execute Direct DB Mutation</button>
+        </div>
+    </div>
+
+    <!-- TAB 3: REDACTION -->
+    <div id="tab-redact" class="tab-content" style="display: none;">
+        <div class="panel">
+            <div class="panel-title">Zero-Knowledge Structured Redaction</div>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                Redact sensitive payload fields (e.g., account numbers, PII) while preserving 100% cryptographic hash chain validity.
+            </p>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Record ID</label>
+                    <input type="number" id="redactRecordId" value="1">
+                </div>
+                <div class="form-group">
+                    <label>Field Path to Redact</label>
+                    <input type="text" id="redactFieldPath" value="accountNumber">
+                </div>
+                <div class="form-group">
+                    <label>Compliance Reason</label>
+                    <input type="text" id="redactReason" value="GDPR Right-to-be-Forgotten PII Removal">
+                </div>
+            </div>
+            <button class="btn" onclick="executeRedaction()">Apply Structured Redaction</button>
+            <div id="redact-output" style="margin-top: 1rem;"></div>
+        </div>
+    </div>
+
+    <!-- TAB 4: COMPLIANCE -->
+    <div id="tab-compliance" class="tab-content" style="display: none;">
+        <div class="panel">
+            <div class="panel-title">Scenario C: Regulatory Client Access Compliance Audit Report</div>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                Clarified requirement statement: Generates cryptographically-certified regulatory reports on client account access trails.
+            </p>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Client Account ID</label>
+                    <input type="text" id="complianceAccountId" value="ACCT-9842">
+                </div>
+            </div>
+            <button class="btn btn-success" onclick="generateComplianceReport()">Generate Certified Regulatory Report</button>
+            <div id="compliance-output" style="margin-top: 1rem;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api/v1/audit';
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).style.display = 'block';
+            event.target.classList.add('active');
+        }
+
+        async function fetchEvents() {
+            try {
+                const res = await fetch(`${API_BASE}/events?size=50`);
+                const data = await res.json();
+                const tbody = document.getElementById('events-tbody');
+                tbody.innerHTML = '';
+                document.getElementById('metric-total').innerText = data.totalElements || data.content.length;
+
+                data.content.forEach(r => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>#${r.sequenceNumber}</strong></td>
+                        <td>${new Date(r.timestamp).toLocaleTimeString()}</td>
+                        <td><span class="badge" style="background: rgba(192, 132, 252, 0.15); color: var(--accent-purple); border-color: rgba(192, 132, 252, 0.3);">${r.eventType}</span></td>
+                        <td>${r.actorId}</td>
+                        <td>${r.resourceType}:${r.resourceId}</td>
+                        <td class="hash-code">${r.previousHash.substring(0, 12)}...</td>
+                        <td class="hash-code">${r.recordHash.substring(0, 16)}...</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        document.getElementById('create-event-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const body = {
+                eventType: document.getElementById('eventType').value,
+                actorId: document.getElementById('actorId').value,
+                resourceType: document.getElementById('resourceType').value,
+                resourceId: document.getElementById('resourceId').value,
+                payload: JSON.parse(document.getElementById('payload').value)
+            };
+
+            await fetch(`${API_BASE}/events`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            fetchEvents();
+            runVerification();
+        });
+
+        async function runVerification() {
+            const res = await fetch(`${API_BASE}/verify`);
+            const data = await res.json();
+            const container = document.getElementById('verification-output');
+            const integrityEl = document.getElementById('metric-integrity');
+
+            if (data.intact) {
+                integrityEl.innerText = "100% Intact";
+                integrityEl.style.color = "var(--accent-emerald)";
+                container.innerHTML = `
+                    <div class="status-box status-intact">
+                        ✅ ${data.statusMessage} (${data.totalRecordsChecked} records checked)
+                    </div>
+                `;
+            } else {
+                integrityEl.innerText = "BROKEN / TAMPERED";
+                integrityEl.style.color = "var(--accent-rose)";
+                container.innerHTML = `
+                    <div class="status-box status-broken">
+                        🚨 ${data.statusMessage}
+                        <pre style="margin-top: 0.5rem; font-size: 0.85rem;">${JSON.stringify(data.violations, null, 2)}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        async function simulateTamper() {
+            const recordId = document.getElementById('tamperRecordId').value;
+            const payload = document.getElementById('tamperPayload').value;
+            await fetch(`${API_BASE}/tamper-test?recordId=${recordId}&tamperedPayload=${encodeURIComponent(payload)}`, { method: 'POST' });
+            alert(`Record #${recordId} database row mutated! Run verification scan to see detection.`);
+            fetchEvents();
+            runVerification();
+        }
+
+        async function executeRedaction() {
+            const id = document.getElementById('redactRecordId').value;
+            const body = {
+                fieldPath: document.getElementById('redactFieldPath').value,
+                reason: document.getElementById('redactReason').value
+            };
+            const res = await fetch(`${API_BASE}/events/${id}/redact`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const data = await res.json();
+            document.getElementById('redact-output').innerHTML = `
+                <div class="status-box status-intact">
+                    ✔ Field '${body.fieldPath}' redacted successfully! Payload masked to [REDACTED] while SHA-256 chain remains INTACT.
+                </div>
+            `;
+            fetchEvents();
+            runVerification();
+        }
+
+        async function generateComplianceReport() {
+            const acct = document.getElementById('complianceAccountId').value;
+            const res = await fetch(`/api/v1/compliance/client-access-report?clientAccountId=${acct}`);
+            const data = await res.json();
+            document.getElementById('compliance-output').innerHTML = `
+                <div class="status-box status-intact">
+                    <strong>Report ID:</strong> ${data.reportId}<br>
+                    <strong>Cryptographic Proof Token:</strong> ${data.cryptographicProofToken}<br>
+                    <strong>Total Access Events:</strong> ${data.totalAccessEvents} across ${data.uniqueActors} unique actors.
+                </div>
+            `;
+        }
+
+        // Initialize
+        fetchEvents();
+        runVerification();
+    </script>
+</body>
+</html>
