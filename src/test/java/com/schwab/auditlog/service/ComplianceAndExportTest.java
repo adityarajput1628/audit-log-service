@@ -51,7 +51,7 @@ class ComplianceAndExportTest {
 
         assertThat(bundle.getFilterValue()).isEqualTo("ACCT-7711");
         assertThat(bundle.getRecordCount()).isEqualTo(1L);
-        assertThat(bundle.getExportDigest()).hasSize(64);
+        assertThat(bundle.getExportDigest()).startsWith("HMAC-SHA256:");
         assertThat(bundle.getVerificationStatus()).isEqualTo("VERIFIED_INTACT");
     }
 
@@ -71,7 +71,7 @@ class ComplianceAndExportTest {
         assertThat(report.getClientAccountId()).isEqualTo("ACCT-7711");
         assertThat(report.getTotalAccessEvents()).isEqualTo(1L);
         assertThat(report.getUniqueActors()).isEqualTo(1L);
-        assertThat(report.getCryptographicProofToken()).startsWith("PROOF-SHA256:");
+        assertThat(report.getCryptographicProofToken()).startsWith("PROOF-HMAC-SHA256:");
         assertThat(report.getChainVerification().isIntact()).isTrue();
     }
 }

@@ -15,15 +15,19 @@ import java.util.Map;
 public class CreateEventRequest {
 
     @NotBlank(message = "eventType is required")
+    @jakarta.validation.constraints.Size(max = 255, message = "eventType cannot exceed 255 characters")
     private String eventType;
 
     @NotBlank(message = "actorId is required")
+    @jakarta.validation.constraints.Size(max = 255, message = "actorId cannot exceed 255 characters")
     private String actorId;
 
     @NotBlank(message = "resourceType is required")
+    @jakarta.validation.constraints.Size(max = 255, message = "resourceType cannot exceed 255 characters")
     private String resourceType;
 
     @NotBlank(message = "resourceId is required")
+    @jakarta.validation.constraints.Size(max = 255, message = "resourceId cannot exceed 255 characters")
     private String resourceId;
 
     @NotNull(message = "payload is required")

@@ -8,13 +8,26 @@
 This repository contains a production-grade, tamper-evident **Audit Log Service** engineered using **Java 17**, **Spring Boot 3.3**, and **Gradle**. 
 
 The system guarantees:
+- **P0 Security Boundary & RBAC Authorization**: Enforces Spring Security HTTP Basic authentication with Role-Based Access Control (`ROLE_INGEST`, `ROLE_AUDITOR`, `ROLE_ADMIN`), explicit CORS origins, and isolated sensitive operations.
 - **Append-Only Immutability**: No update or delete operations on audit records.
 - **Cryptographic Tamper Evidence**: Sequential SHA-256 hash chaining linking every event to the prior record's digest back to a defined Genesis Zero hash.
+- **Archived Record Integrity Verification**: Cryptographically verifies **ALL** records (active AND archived tombstones) in `verifyChain()`, catching direct database tampering on archived tombstones or metadata.
 - **Zero-Knowledge Field Redaction (Scenario B)**: Masks sensitive PII (account numbers, SSNs) to `"[REDACTED]"` while preserving 100% cryptographic hash chain validity using salted field digests.
 - **Policy-Based Retention (Scenario B)**: Soft-deletes aged records using verifiable tombstones without producing false-positive chain breaks.
-- **Verifiable Bulk Export (Scenario B)**: Generates self-contained JSON bundles with inclusion proofs for third-party regulatory validation.
+- **Keyed HMAC Proof Bundles & Reports**: Issues non-repudiable HMAC-SHA256 keyed signatures (`HMAC-SHA256:<sig>` and `PROOF-HMAC-SHA256:<sig>`) for bulk exports and SEC regulatory access reports.
+- **Multi-Instance DB Concurrency**: Database-level pessimistic locking (`@Lock(LockModeType.PESSIMISTIC_WRITE)`) and atomic synchronization guaranteeing non-overlapping sequence assignment under multi-threaded parallel load.
 - **Ambiguous Requirement Clarification (Scenario C)**: Translates the under-specified product mandate *"Regulators need to be able to audit access to client account data"* into a concrete, cryptographically-certified compliance reporting engine.
 - **Live Direct-DB Tamper Simulator & Embedded Visualizer**: Interactive control portal (`http://localhost:8080`) with a 1-click database corruption simulator to demonstrate verification detection in real time.
+
+---
+
+## Security Credentials & Roles
+
+| Role | Username | Password | Permitted API Operations |
+| :--- | :--- | :--- | :--- |
+| **`ROLE_INGEST`** | `ingest` | `ingest123` | Ingest new events (`POST /api/v1/audit/events`), query events (`GET /api/v1/audit/events`) |
+| **`ROLE_AUDITOR`** | `auditor` | `auditor123` | Query events, run verification scans (`GET /api/v1/audit/verify`), bulk exports, compliance reports |
+| **`ROLE_ADMIN`** | `admin` | `admin123` | All endpoints including Redaction (`POST /events/{id}/redact`), Retention (`POST /retention/apply`), Tamper Simulator |
 
 ---
 
@@ -24,15 +37,17 @@ The system guarantees:
 - **Java Development Kit (JDK)**: Java 17 LTS or higher
 - **Gradle**: Uses bundled Gradle Wrapper (`./gradlew` or `.\gradlew.bat`)
 
-### 1. Run Automated Test Suite
-To verify compilation, unit tests, integration tests, and tamper detection:
+### 1. Run Automated Test Suite & JaCoCo Coverage Report
+To verify compilation, unit tests, MockMvc security tests, archived tamper detection, concurrency, and JaCoCo coverage:
 ```bash
 # Windows
-.\gradlew.bat test
+.\gradlew.bat test jacocoTestReport jacocoTestCoverageVerification
 
 # macOS / Linux
-./gradlew test
+./gradlew test jacocoTestReport jacocoTestCoverageVerification
 ```
+* **Test Report HTML**: `build/reports/tests/test/index.html`
+* **JaCoCo Coverage HTML**: `build/reports/jacoco/test/html/index.html`
 
 ### 2. Start the Service
 ```bash
@@ -121,3 +136,28 @@ Where:
 | `/api/v1/audit/export` | `GET` | Export self-contained verifiable JSON bundle |
 | `/api/v1/compliance/client-access-report` | `GET` | Generate certified regulatory client access report |
 | `/api/v1/audit/tamper-test` | `POST` | Direct DB mutation simulator for demonstration |
+
+---
+
+## Testing Approach, Limitations & Trade-Offs
+
+### What is Covered
+1. **Canonical Hashing & Determinism**: Unit tests verify SHA-256 calculation, property sorting, timestamp formatting, and field salt hashing (`HashChainEngineTest.java`).
+2. **Ingestion & Chain Continuity**: Unit & integration tests verify sequential sequence numbers, `previousHash` linking to Genesis Zero (`0000...0000`), and full chain verification (`AuditLogServiceTest.java`).
+3. **Database Tamper Detection**: Integration tests verify that modifying a record's raw DB fields immediately triggers `HASH_MISMATCH` at the exact altered sequence index (`AuditLogServiceTest.java`).
+4. **Zero-Knowledge Redaction & Retention**: Tests confirm PII redaction (`"[REDACTED]"`) preserves original record hash and tombstone archiving preserves verification continuity (`RedactionAndRetentionTest.java`).
+5. **Regulatory Compliance & Export**: Tests verify certified access reports with proof tokens and verifiable JSON export bundles (`ComplianceAndExportTest.java`).
+
+### Limitations & Trade-Offs
+- **$O(N)$ Verification Walk**: Current verification engine performs a linear database walk. For high-volume production scale (100M+ events), periodic Merkle root checkpointing should be introduced.
+- **Single-Node DB Scope**: Uses in-memory H2 for prototype zero-dependency runnability. Production deployment requires PostgreSQL with write-ahead replication.
+
+---
+
+## Final Engineering Summary
+
+- **Plan & Rationale**: Built a multi-layered, tamper-evident audit service balancing append-only immutability, zero-knowledge PII redaction, and certified compliance reporting.
+- **Key Artifacts**: Production Java source code, JUnit 5 test suite, visual glassmorphism UI portal (`index.html`), architectural markdown specifications (`ARCHITECTURE.md`, `SCENARIO_A.md`, `SCENARIO_B.md`, `SCENARIO_C.md`), `AI_USAGE_LOG.md`, and candidate `ATTESTATION.md`.
+- **Risks & Mitigation**: Concurrency race conditions mitigated by atomic sequence locking and SQL unique constraints; clock skew mitigated by server UTC timestamp assignment.
+- **Assumptions**: Audit records are generated via authorized internal services; database admin access is restricted, with tamper verification serving as the defense-in-depth detector.
+

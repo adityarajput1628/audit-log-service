@@ -78,7 +78,7 @@ public class ExportService {
             bundleHashBuffer.append(r.getRecordHash());
         }
 
-        String exportDigest = hashChainEngine.sha256Hex(bundleHashBuffer.toString());
+        String exportDigest = "HMAC-SHA256:" + hashChainEngine.hmacSha256(bundleHashBuffer.toString(), "SCHWAB_EXPORT_SECRET_KEY");
         String genesisHash = records.isEmpty() ? AuditRecord.GENESIS_HASH : records.get(0).getPreviousHash();
         String latestHash = records.isEmpty() ? AuditRecord.GENESIS_HASH : records.get(records.size() - 1).getRecordHash();
 

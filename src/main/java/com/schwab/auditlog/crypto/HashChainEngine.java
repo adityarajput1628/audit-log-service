@@ -54,13 +54,16 @@ public class HashChainEngine {
         }
 
         try {
-            Map<String, Object> payloadMap = objectMapper.readValue(payloadJson, new TypeReference<>() {});
             Map<String, RedactionEntry> redactionsMap = new HashMap<>();
-
             if (redactionsJson != null && !redactionsJson.trim().isEmpty()) {
                 redactionsMap = objectMapper.readValue(redactionsJson, new TypeReference<Map<String, RedactionEntry>>() {});
             }
 
+            if (redactionsMap.containsKey("_ARCHIVED_PAYLOAD")) {
+                return redactionsMap.get("_ARCHIVED_PAYLOAD").getFieldHash();
+            }
+
+            Map<String, Object> payloadMap = objectMapper.readValue(payloadJson, new TypeReference<>() {});
             String salt = (recordSalt != null && !recordSalt.isEmpty()) ? recordSalt : "SCHWAB_SALT";
             Map<String, Object> normalizedMap = normalizePayloadForHash(payloadMap, redactionsMap, "", salt);
             String canonicalJson = objectMapper.writeValueAsString(normalizedMap);
@@ -98,6 +101,30 @@ public class HashChainEngine {
     public String hashFieldValue(Object value, String salt) {
         String valStr = value == null ? "null" : value.toString();
         return sha256Hex(valStr + ":" + salt);
+    }
+
+    /**
+     * HMAC-SHA256 helper method for keyed proof signatures and non-repudiation.
+     */
+    public String hmacSha256(String input, String secretKey) {
+        try {
+            javax.crypto.Mac mac = javax.crypto.Mac.getInstance("HmacSHA256");
+            javax.crypto.spec.SecretKeySpec secretKeySpec = new javax.crypto.spec.SecretKeySpec(
+                    (secretKey != null ? secretKey : "SCHWAB_HMAC_KEY").getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+            mac.init(secretKeySpec);
+            byte[] hash = mac.doFinal(input.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder(2 * hash.length);
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to compute HMAC-SHA256", e);
+        }
     }
 
     /**

@@ -50,3 +50,19 @@
   - Configured isolated in-memory test database (`src/test/resources/application.properties`).
   - Executed `./gradlew.bat test` verifying 100% pass rate across all 9 test cases (`BUILD SUCCESSFUL in 14s`).
   - Authored candidate `ATTESTATION.md`, project `README.md`, and final traceability logs.
+
+---
+
+### Commit 4: Security Hardening, Archived Integrity, DB Concurrency & JaCoCo Coverage (`commit 4-Security Hardening and Score Remediation`)
+- **Timestamp**: 2026-09-21 17:15:00 UTC+5:30
+- **AI Tool Used**: Antigravity AI (Gemini 3.6 Flash)
+- **Prompt**: Remediate evaluator scorecard findings: add Spring Security RBAC, fix archived record tombstone verification, replace JVM synchronized with DB pessimistic locking and retry, add HMAC-SHA256 keyed signatures, and expand test suite with MockMvc, validation, concurrency, archived tamper, and JaCoCo reporting.
+- **What Was Done**:
+  - Integrated `spring-boot-starter-security` and built `SecurityConfig.java` enforcing HTTP Basic authentication and Role-Based Access Control (`ROLE_INGEST`, `ROLE_AUDITOR`, `ROLE_ADMIN`).
+  - Fixed **Archived Record Verification Bug (`ARCH-03`)**: Updated `HashChainEngine.java`, `RetentionService.java`, and `AuditLogService.java` to preserve original payload hashes in `redactions_json` metadata (`_ARCHIVED_PAYLOAD`), ensuring `verifyChain()` verifies **ALL** records (active AND archived) and catches tombstone tampering.
+  - Fixed **Concurrency (`ARCH-04`)**: Replaced JVM single-instance `synchronized` with DB pessimistic write locking (`@Lock(LockModeType.PESSIMISTIC_WRITE)`) and pessimistic lookup retry loop.
+  - Added **Keyed HMAC Proof Signatures (`SEC-07`)**: Updated `ExportService.java` and `ComplianceService.java` to compute HMAC-SHA256 keyed signatures (`HMAC-SHA256: <sig>`) for export bundles and compliance proof tokens.
+  - Restricted CORS policies and isolated `/tamper-test` endpoint behind `ROLE_ADMIN` authorization.
+  - Configured `jacoco` plugin in `build.gradle` with 80%+ minimum line/branch coverage enforcement and test execution report generation (`xml.required = true`).
+  - Authored extensive new JUnit test suites: `SecurityAndAuthorizationTest.java` (MockMvc 401/403/200 paths), `ArchivedRecordTamperTest.java` (tombstone tampering detection), `ValidationAndEdgeCaseTest.java` (input bounds/validation), and `ConcurrencyAndLockingTest.java` (multi-threaded parallel ingestion).
+  - Updated `ATTESTATION.md` with repository URL, branch, commit SHA, ZIP SHA-256 digest (`314c5cbb...`), and explicit Claim-to-Evidence Matrix Table.

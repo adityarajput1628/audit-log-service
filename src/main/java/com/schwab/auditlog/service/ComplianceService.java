@@ -102,7 +102,7 @@ public class ComplianceService {
         String reportId = "SEC-RPT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
         String proofInput = reportId + ":" + clientAccountId + ":" + records.size() + ":" + verification.isIntact();
-        String proofToken = "PROOF-SHA256:" + hashChainEngine.sha256Hex(proofInput);
+        String proofToken = "PROOF-HMAC-SHA256:" + hashChainEngine.hmacSha256(proofInput, "SCHWAB_COMPLIANCE_KEY");
 
         return ComplianceReport.builder()
                 .reportId(reportId)

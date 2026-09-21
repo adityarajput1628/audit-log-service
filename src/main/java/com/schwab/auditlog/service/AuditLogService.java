@@ -35,10 +35,20 @@ public class AuditLogService {
     /**
      * Append-only event ingestion with SHA-256 hash chaining.
      */
+    /**
+     * Append-only event ingestion with SHA-256 hash chaining, DB locking and atomic synchronization.
+     */
     @Transactional
     public synchronized AuditRecord createEvent(CreateEventRequest request) {
-        Optional<AuditRecord> latestRecordOpt = repository.findTopByOrderBySequenceNumberDesc();
-        
+        if (request == null) {
+            throw new IllegalArgumentException("CreateEventRequest cannot be null.");
+        }
+
+        Optional<AuditRecord> latestRecordOpt = repository.findLatestRecordForUpdate();
+        if (latestRecordOpt.isEmpty()) {
+            latestRecordOpt = repository.findTopByOrderBySequenceNumberDesc();
+        }
+
         long nextSequence = latestRecordOpt.map(r -> r.getSequenceNumber() + 1).orElse(1L);
         String previousHash = latestRecordOpt.map(AuditRecord::getRecordHash).orElse(AuditRecord.GENESIS_HASH);
         Instant eventTimestamp = (request.getTimestamp() != null ? request.getTimestamp() : Instant.now())
@@ -46,7 +56,7 @@ public class AuditLogService {
 
         String payloadJson;
         try {
-            payloadJson = objectMapper.writeValueAsString(request.getPayload());
+            payloadJson = objectMapper.writeValueAsString(request.getPayload() != null ? request.getPayload() : Map.of());
         } catch (Exception e) {
             payloadJson = "{}";
         }
@@ -67,11 +77,11 @@ public class AuditLogService {
         String recordHash = hashChainEngine.calculateRecordHash(newRecord);
         newRecord.setRecordHash(recordHash);
 
-        return repository.save(newRecord);
+        return repository.saveAndFlush(newRecord);
     }
 
     /**
-     * Multi-criteria query API with pagination.
+     * Multi-criteria query API with bounded pagination and date validation.
      */
     @Transactional(readOnly = true)
     public Page<AuditRecord> queryEvents(
@@ -85,6 +95,13 @@ public class AuditLogService {
             int page,
             int size
     ) {
+        if (from != null && to != null && from.isAfter(to)) {
+            throw new IllegalArgumentException("'from' timestamp cannot be after 'to' timestamp.");
+        }
+
+        int boundedPage = Math.max(page, 0);
+        int boundedSize = Math.min(Math.max(size, 1), 100);
+
         Specification<AuditRecord> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -113,7 +130,7 @@ public class AuditLogService {
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "sequenceNumber"));
+        Pageable pageable = PageRequest.of(boundedPage, boundedSize, Sort.by(Sort.Direction.DESC, "sequenceNumber"));
         return repository.findAll(spec, pageable);
     }
 
@@ -170,20 +187,18 @@ public class AuditLogService {
                         .build());
             }
 
-            // 3. Recompute record hash and verify integrity (for active records)
-            if (!current.isArchived()) {
-                String calculatedHash = hashChainEngine.calculateRecordHash(current);
-                if (!calculatedHash.equalsIgnoreCase(current.getRecordHash())) {
-                    result.setIntact(false);
-                    result.getViolations().add(ViolationDetail.builder()
-                            .sequenceNumber(current.getSequenceNumber())
-                            .recordId(current.getId())
-                            .violationType("HASH_MISMATCH")
-                            .expectedHash(calculatedHash)
-                            .actualHash(current.getRecordHash())
-                            .description("Record content tampered at sequence #" + current.getSequenceNumber() + ". Recomputed hash differs from stored record hash.")
-                            .build());
-                }
+            // 3. Recompute record hash and verify integrity for all records (active and archived)
+            String calculatedHash = hashChainEngine.calculateRecordHash(current);
+            if (!calculatedHash.equalsIgnoreCase(current.getRecordHash())) {
+                result.setIntact(false);
+                result.getViolations().add(ViolationDetail.builder()
+                        .sequenceNumber(current.getSequenceNumber())
+                        .recordId(current.getId())
+                        .violationType("HASH_MISMATCH")
+                        .expectedHash(calculatedHash)
+                        .actualHash(current.getRecordHash())
+                        .description("Record content tampered at sequence #" + current.getSequenceNumber() + ". Recomputed hash differs from stored record hash.")
+                        .build());
             }
 
             expectedPreviousHash = current.getRecordHash();
