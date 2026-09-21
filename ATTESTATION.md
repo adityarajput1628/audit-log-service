@@ -2,7 +2,7 @@
 
 - **Full Name**: Aditya Rajput
 - **Candidate Email**: adityarajput1628@users.noreply.github.com
-- **GitHub Repository**: https://github.com/adityarajput1628/schwab-audit-service
+- **GitHub Repository**: https://github.com/adityarajput1628/audit-log-service
 - **Repository Branch**: `main`
 - **Reviewed Archive Revision Digest**: `314c5cbb25ee580ab260c036073adcb774cbf9a6` (ZIP SHA-256 Digest)
 - **Assignment Title**: Charles Schwab Audit Log Service – Production System Evaluation

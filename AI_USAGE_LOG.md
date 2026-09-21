@@ -65,4 +65,4 @@
   - Restricted CORS policies and isolated `/tamper-test` endpoint behind `ROLE_ADMIN` authorization.
   - Configured `jacoco` plugin in `build.gradle` with 80%+ minimum line/branch coverage enforcement and test execution report generation (`xml.required = true`).
   - Authored extensive new JUnit test suites: `SecurityAndAuthorizationTest.java` (MockMvc 401/403/200 paths), `ArchivedRecordTamperTest.java` (tombstone tampering detection), `ValidationAndEdgeCaseTest.java` (input bounds/validation), and `ConcurrencyAndLockingTest.java` (multi-threaded parallel ingestion).
-  - Updated `ATTESTATION.md` with repository URL, branch, commit SHA, ZIP SHA-256 digest (`314c5cbb...`), and explicit Claim-to-Evidence Matrix Table.
+  - Updated `ATTESTATION.md` with repository URL (`https://github.com/adityarajput1628/audit-log-service`), branch, commit SHA, ZIP SHA-256 digest (`314c5cbb...`), and explicit Claim-to-Evidence Matrix Table.
