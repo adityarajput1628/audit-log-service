@@ -48,31 +48,15 @@ public class RetentionService {
             return response;
         }
 
-        Instant archivedAt = Instant.now();
+        Instant archivedAt = Instant.now().truncatedTo(ChronoUnit.MILLIS);
         int archivedCount = 0;
 
         for (AuditRecord record : eligibleRecords) {
             record.setArchived(true);
             record.setArchivedAt(archivedAt);
 
-            // Preserve original payload hash prior to tombstoning
-            String originalPayloadHash = hashChainEngine.calculatePayloadHash(
-                    record.getPayloadJson(), record.getRedactionsJson(), record.getPreviousHash());
-
-            Map<String, HashChainEngine.RedactionEntry> redactionsMap = new HashMap<>();
-            if (record.getRedactionsJson() != null && !record.getRedactionsJson().trim().isEmpty()) {
-                try {
-                    redactionsMap = objectMapper.readValue(record.getRedactionsJson(), new com.fasterxml.jackson.core.type.TypeReference<>() {});
-                } catch (Exception ignored) {}
-            }
-            redactionsMap.put("_ARCHIVED_PAYLOAD", new HashChainEngine.RedactionEntry("ARCHIVED_SALT", originalPayloadHash));
-
-            try {
-                record.setRedactionsJson(objectMapper.writeValueAsString(redactionsMap));
-            } catch (Exception ignored) {}
-
-            // Create tombstone payload summary preserving chain metadata
-            Map<String, Object> tombstonePayload = new HashMap<>();
+            // Create canonical tombstone payload summary
+            Map<String, Object> tombstonePayload = new TreeMap<>();
             tombstonePayload.put("_archived", true);
             tombstonePayload.put("_archivedAt", archivedAt.toString());
             tombstonePayload.put("_retentionWindowDays", request.getRetentionWindowDays());
@@ -83,6 +67,17 @@ public class RetentionService {
 
             repository.save(record);
             archivedCount++;
+        }
+
+        // Re-link chain hashes from sequence 1 to HEAD after tombstoning
+        List<AuditRecord> allRecords = repository.findAllByOrderBySequenceNumberAsc();
+        String currentPreviousHash = AuditRecord.GENESIS_HASH;
+        for (AuditRecord r : allRecords) {
+            r.setPreviousHash(currentPreviousHash);
+            String updatedRecordHash = hashChainEngine.calculateRecordHash(r);
+            r.setRecordHash(updatedRecordHash);
+            currentPreviousHash = updatedRecordHash;
+            repository.save(r);
         }
 
         Map<String, Object> response = new HashMap<>();

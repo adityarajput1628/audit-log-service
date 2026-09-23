@@ -59,10 +59,6 @@ public class HashChainEngine {
                 redactionsMap = objectMapper.readValue(redactionsJson, new TypeReference<Map<String, RedactionEntry>>() {});
             }
 
-            if (redactionsMap.containsKey("_ARCHIVED_PAYLOAD")) {
-                return redactionsMap.get("_ARCHIVED_PAYLOAD").getFieldHash();
-            }
-
             Map<String, Object> payloadMap = objectMapper.readValue(payloadJson, new TypeReference<>() {});
             String salt = (recordSalt != null && !recordSalt.isEmpty()) ? recordSalt : "SCHWAB_SALT";
             Map<String, Object> normalizedMap = normalizePayloadForHash(payloadMap, redactionsMap, "", salt);
