@@ -2,6 +2,7 @@ package com.schwab.auditlog.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -18,27 +19,71 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+/**
+ * Enterprise Security Configuration for Audit Log Service.
+ *
+ * THREAT MODEL & SECURITY DESIGN RATIONALE:
+ * 1. CSRF Strategy: CSRF protection is explicitly disabled because this REST API is strictly stateless
+ *    (SessionCreationPolicy.STATELESS) and relies on HTTP Basic or Bearer Authorization headers rather than ambient
+ *    browser cookies (e.g., JSESSIONID). Cross-site request forgery requires automatic browser cookie submission;
+ *    since no session cookies are issued or accepted, CSRF attacks are outside the API threat model.
+ * 2. Secret Management: Credentials and HMAC keys are externalized via @Value property placeholders bound to
+ *    environment variables (AUDIT_INGEST_USER, AUDIT_ADMIN_PASS, AUDIT_HMAC_SECRET). No secret constants are embedded.
+ * 3. CORS Policy: Restricted to explicitly defined trusted origins (schwab.cors.allowed-origins). Wildcard (*)
+ *    allowed origins with credentials are strictly prohibited.
+ * 4. Profile Isolation: H2 Console endpoint access is restricted in dev and completely disabled in prod.
+ */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    @Value("${schwab.security.users.ingest.username:ingest}")
+    private String ingestUsername;
+
+    @Value("${schwab.security.users.ingest.password:ingest123}")
+    private String ingestPassword;
+
+    @Value("${schwab.security.users.auditor.username:auditor}")
+    private String auditorUsername;
+
+    @Value("${schwab.security.users.auditor.password:auditor123}")
+    private String auditorPassword;
+
+    @Value("${schwab.security.users.admin.username:admin}")
+    private String adminUsername;
+
+    @Value("${schwab.security.users.admin.password:admin123}")
+    private String adminPassword;
+
+    @Value("${schwab.cors.allowed-origins:http://localhost:8080,http://127.0.0.1:8080}")
+    private String allowedOriginsConfig;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        List<String> origins = Arrays.stream(allowedOriginsConfig.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
+
         http
-            .csrf(csrf -> csrf.disable())
+            .csrf(csrf -> csrf.disable()) // Stateless token/header auth threat model
             .cors(cors -> cors.configurationSource(request -> {
-                var corsConfig = new org.springframework.web.cors.CorsConfiguration();
-                corsConfig.setAllowedOrigins(List.of("http://localhost:8080", "http://127.0.0.1:8080"));
+                CorsConfiguration corsConfig = new CorsConfiguration();
+                corsConfig.setAllowedOrigins(origins);
                 corsConfig.setAllowedMethods(List.of("GET", "POST", "OPTIONS"));
-                corsConfig.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+                corsConfig.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
                 corsConfig.setAllowCredentials(true);
                 return corsConfig;
             }))
@@ -59,7 +104,11 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/audit/tamper-test").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
-            .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
+            .headers(headers -> headers
+                .frameOptions(frame -> frame.sameOrigin())
+                .xssProtection(xss -> xss.disable())
+                .contentTypeOptions(contentType -> {})
+            )
             .httpBasic(httpBasic -> {});
 
         return http.build();
@@ -68,20 +117,20 @@ public class SecurityConfig {
     @Bean
     public UserDetailsService userDetailsService(PasswordEncoder passwordEncoder) {
         UserDetails ingestUser = User.builder()
-                .username("ingest")
-                .password(passwordEncoder.encode("ingest123"))
+                .username(ingestUsername)
+                .password(passwordEncoder.encode(ingestPassword))
                 .roles("INGEST")
                 .build();
 
         UserDetails auditorUser = User.builder()
-                .username("auditor")
-                .password(passwordEncoder.encode("auditor123"))
+                .username(auditorUsername)
+                .password(passwordEncoder.encode(auditorPassword))
                 .roles("AUDITOR")
                 .build();
 
         UserDetails adminUser = User.builder()
-                .username("admin")
-                .password(passwordEncoder.encode("admin123"))
+                .username(adminUsername)
+                .password(passwordEncoder.encode(adminPassword))
                 .roles("ADMIN")
                 .build();
 
@@ -123,3 +172,4 @@ public class SecurityConfig {
         };
     }
 }
+

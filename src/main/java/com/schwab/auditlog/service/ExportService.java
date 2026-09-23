@@ -7,6 +7,7 @@ import com.schwab.auditlog.dto.ExportBundle;
 import com.schwab.auditlog.dto.VerificationResult;
 import com.schwab.auditlog.model.AuditRecord;
 import com.schwab.auditlog.repository.AuditRecordRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,9 @@ public class ExportService {
     private final HashChainEngine hashChainEngine;
     private final AuditLogService auditLogService;
     private final ObjectMapper objectMapper;
+
+    @Value("${schwab.security.hmac.secret:schwab_dev_hmac_secret_key_32bytes_minimum_length}")
+    private String hmacSecret;
 
     public ExportService(AuditRecordRepository repository, HashChainEngine hashChainEngine, AuditLogService auditLogService, ObjectMapper objectMapper) {
         this.repository = repository;
@@ -78,7 +82,7 @@ public class ExportService {
             bundleHashBuffer.append(r.getRecordHash());
         }
 
-        String exportDigest = "HMAC-SHA256:" + hashChainEngine.hmacSha256(bundleHashBuffer.toString(), "SCHWAB_EXPORT_SECRET_KEY");
+        String exportDigest = "HMAC-SHA256:" + hashChainEngine.hmacSha256(bundleHashBuffer.toString(), hmacSecret);
         String genesisHash = records.isEmpty() ? AuditRecord.GENESIS_HASH : records.get(0).getPreviousHash();
         String latestHash = records.isEmpty() ? AuditRecord.GENESIS_HASH : records.get(records.size() - 1).getRecordHash();
 
@@ -96,3 +100,4 @@ public class ExportService {
                 .build();
     }
 }
+

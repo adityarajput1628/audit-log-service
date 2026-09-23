@@ -8,6 +8,7 @@ import com.schwab.auditlog.dto.ComplianceReport.ActorAccessSummary;
 import com.schwab.auditlog.dto.VerificationResult;
 import com.schwab.auditlog.model.AuditRecord;
 import com.schwab.auditlog.repository.AuditRecordRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +24,9 @@ public class ComplianceService {
     private final HashChainEngine hashChainEngine;
     private final AuditLogService auditLogService;
     private final ObjectMapper objectMapper;
+
+    @Value("${schwab.security.hmac.secret:schwab_dev_hmac_secret_key_32bytes_minimum_length}")
+    private String hmacSecret;
 
     public ComplianceService(AuditRecordRepository repository, HashChainEngine hashChainEngine, AuditLogService auditLogService, ObjectMapper objectMapper) {
         this.repository = repository;
@@ -102,7 +106,7 @@ public class ComplianceService {
         String reportId = "SEC-RPT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
         String proofInput = reportId + ":" + clientAccountId + ":" + records.size() + ":" + verification.isIntact();
-        String proofToken = "PROOF-HMAC-SHA256:" + hashChainEngine.hmacSha256(proofInput, "SCHWAB_COMPLIANCE_KEY");
+        String proofToken = "PROOF-HMAC-SHA256:" + hashChainEngine.hmacSha256(proofInput, hmacSecret);
 
         return ComplianceReport.builder()
                 .reportId(reportId)
@@ -120,3 +124,4 @@ public class ComplianceService {
                 .build();
     }
 }
+

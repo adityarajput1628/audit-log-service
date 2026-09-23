@@ -108,4 +108,30 @@ class SecurityAndAuthorizationTest {
                 .content(objectMapper.writeValueAsString(retentionReq)))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    @DisplayName("BOLA / IDOR protection: Non-auditors cannot query events belonging to other actors")
+    void testBolaResourceAuthorization_nonAuditorCannotAccessOtherActorEvents() throws Exception {
+        mockMvc.perform(get("/api/v1/audit/events")
+                .with(httpBasic("ingest", "ingest123"))
+                .param("actorId", "other_user_account"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.error").value("Forbidden"));
+    }
+
+    @Test
+    @DisplayName("BOLA / IDOR protection: AUDITOR and ADMIN can access events for any actorId")
+    void testAuditorCanAccessAnyActorEvents() throws Exception {
+        mockMvc.perform(get("/api/v1/audit/events")
+                .with(httpBasic("auditor", "auditor123"))
+                .param("actorId", "target_client_account"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v1/audit/events")
+                .with(httpBasic("admin", "admin123"))
+                .param("actorId", "target_client_account"))
+                .andExpect(status().isOk());
+    }
 }
+

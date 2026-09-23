@@ -1,6 +1,7 @@
 package com.schwab.auditlog.controller;
 
 import com.schwab.auditlog.dto.*;
+import com.schwab.auditlog.exception.AuditSecurityException;
 import com.schwab.auditlog.model.AuditRecord;
 import com.schwab.auditlog.service.AuditLogService;
 import com.schwab.auditlog.service.ExportService;
@@ -11,6 +12,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -18,7 +21,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/audit")
-@CrossOrigin(origins = {"http://localhost:8080", "http://127.0.0.1:8080"})
 public class AuditLogController {
 
     private final AuditLogService auditLogService;
@@ -49,6 +51,7 @@ public class AuditLogController {
 
     /**
      * Query API: Multi-criteria filtering with pagination.
+     * Enforces Resource & Tenant level authorization (BOLA/IDOR protection).
      */
     @GetMapping("/events")
     public ResponseEntity<Page<AuditRecord>> queryEvents(
@@ -62,8 +65,10 @@ public class AuditLogController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
+        String effectiveActorId = validateResourceAuthorization(actorId);
+
         Page<AuditRecord> result = auditLogService.queryEvents(
-                actorId, resourceType, resourceId, eventType, from, to, includeArchived, page, size);
+                effectiveActorId, resourceType, resourceId, eventType, from, to, includeArchived, page, size);
         return ResponseEntity.ok(result);
     }
 
@@ -99,13 +104,15 @@ public class AuditLogController {
 
     /**
      * Verifiable Bulk Export Endpoint: Self-contained JSON bundle with inclusion proof.
+     * Enforces BOLA / IDOR resource authorization.
      */
     @GetMapping("/export")
     public ResponseEntity<ExportBundle> exportBundle(
             @RequestParam(required = false) String resourceId,
             @RequestParam(required = false) String actorId
     ) {
-        ExportBundle bundle = exportService.generateExportBundle(resourceId, actorId);
+        String effectiveActorId = validateResourceAuthorization(actorId);
+        ExportBundle bundle = exportService.generateExportBundle(resourceId, effectiveActorId);
         return ResponseEntity.ok(bundle);
     }
 
@@ -122,4 +129,30 @@ public class AuditLogController {
         AuditRecord tampered = auditLogService.simulateTampering(recordId, tamperedPayload, tamperedActorId);
         return ResponseEntity.ok(tampered);
     }
+
+    /**
+     * Helper to validate resource/tenant ownership (BOLA/IDOR protection).
+     * If user is not ADMIN or AUDITOR, they can only query/export audit entries where actorId matches their username.
+     */
+    private String validateResourceAuthorization(String requestedActorId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            return requestedActorId;
+        }
+
+        boolean isAdminOrAuditor = auth.getAuthorities().stream().anyMatch(a ->
+                "ROLE_ADMIN".equals(a.getAuthority()) || "ROLE_AUDITOR".equals(a.getAuthority()));
+
+        if (isAdminOrAuditor) {
+            return requestedActorId;
+        }
+
+        String currentUsername = auth.getName();
+        if (requestedActorId != null && !requestedActorId.trim().isEmpty() && !requestedActorId.equals(currentUsername)) {
+            throw new AuditSecurityException("Access Denied: BOLA/IDOR protection policy prevents non-auditors from viewing audit records for actorId: " + requestedActorId);
+        }
+
+        return currentUsername;
+    }
 }
+

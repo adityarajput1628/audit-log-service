@@ -10,7 +10,6 @@ import java.time.Instant;
 
 @RestController
 @RequestMapping("/api/v1/compliance")
-@CrossOrigin(origins = "*")
 public class ComplianceController {
 
     private final ComplianceService complianceService;
@@ -32,3 +31,4 @@ public class ComplianceController {
         return ResponseEntity.ok(report);
     }
 }
+

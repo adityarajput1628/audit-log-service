@@ -26,6 +26,26 @@ public class GlobalExceptionHandler {
         throw ex;
     }
 
+    @ExceptionHandler(AuditSecurityException.class)
+    public ResponseEntity<Map<String, Object>> handleAuditSecurity(AuditSecurityException ex) {
+        Map<String, Object> error = new HashMap<>();
+        error.put("timestamp", Instant.now().toString());
+        error.put("status", HttpStatus.FORBIDDEN.value());
+        error.put("error", "Forbidden");
+        error.put("message", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
+    @ExceptionHandler(AuditSerializationException.class)
+    public ResponseEntity<Map<String, Object>> handleAuditSerialization(AuditSerializationException ex) {
+        Map<String, Object> error = new HashMap<>();
+        error.put("timestamp", Instant.now().toString());
+        error.put("status", HttpStatus.UNPROCESSABLE_ENTITY.value());
+        error.put("error", "Unprocessable Audit Payload");
+        error.put("message", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
         Map<String, Object> error = new HashMap<>();
@@ -80,3 +100,4 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 }
+
