@@ -53,19 +53,29 @@ public class HashChainEngine {
             return sha256Hex("{}");
         }
 
-        try {
-            Map<String, RedactionEntry> redactionsMap = new HashMap<>();
-            if (redactionsJson != null && !redactionsJson.trim().isEmpty()) {
+        Map<String, RedactionEntry> redactionsMap = new HashMap<>();
+        if (redactionsJson != null && !redactionsJson.trim().isEmpty()) {
+            try {
                 redactionsMap = objectMapper.readValue(redactionsJson, new TypeReference<Map<String, RedactionEntry>>() {});
+            } catch (Exception e) {
+                throw new IllegalArgumentException("Corrupt redactions metadata JSON: " + e.getMessage(), e);
             }
+        }
 
-            Map<String, Object> payloadMap = objectMapper.readValue(payloadJson, new TypeReference<>() {});
-            String salt = (recordSalt != null && !recordSalt.isEmpty()) ? recordSalt : "SCHWAB_SALT";
-            Map<String, Object> normalizedMap = normalizePayloadForHash(payloadMap, redactionsMap, "", salt);
+        Map<String, Object> payloadMap;
+        try {
+            payloadMap = objectMapper.readValue(payloadJson, new TypeReference<>() {});
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Malformed payload JSON: " + e.getMessage(), e);
+        }
+
+        String salt = (recordSalt != null && !recordSalt.isEmpty()) ? recordSalt : "SCHWAB_SALT";
+        Map<String, Object> normalizedMap = normalizePayloadForHash(payloadMap, redactionsMap, "", salt);
+        try {
             String canonicalJson = objectMapper.writeValueAsString(normalizedMap);
             return sha256Hex(canonicalJson);
         } catch (Exception e) {
-            return sha256Hex(payloadJson);
+            throw new IllegalStateException("Failed to serialize normalized payload for hashing: " + e.getMessage(), e);
         }
     }
 

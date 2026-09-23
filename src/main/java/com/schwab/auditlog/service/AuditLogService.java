@@ -188,16 +188,28 @@ public class AuditLogService {
             }
 
             // 3. Recompute record hash and verify integrity for all records (active and archived)
-            String calculatedHash = hashChainEngine.calculateRecordHash(current);
-            if (!calculatedHash.equalsIgnoreCase(current.getRecordHash())) {
+            try {
+                String calculatedHash = hashChainEngine.calculateRecordHash(current);
+                if (!calculatedHash.equalsIgnoreCase(current.getRecordHash())) {
+                    result.setIntact(false);
+                    result.getViolations().add(ViolationDetail.builder()
+                            .sequenceNumber(current.getSequenceNumber())
+                            .recordId(current.getId())
+                            .violationType("HASH_MISMATCH")
+                            .expectedHash(calculatedHash)
+                            .actualHash(current.getRecordHash())
+                            .description("Record content tampered at sequence #" + current.getSequenceNumber() + ". Recomputed hash differs from stored record hash.")
+                            .build());
+                }
+            } catch (Exception ex) {
                 result.setIntact(false);
                 result.getViolations().add(ViolationDetail.builder()
                         .sequenceNumber(current.getSequenceNumber())
                         .recordId(current.getId())
-                        .violationType("HASH_MISMATCH")
-                        .expectedHash(calculatedHash)
-                        .actualHash(current.getRecordHash())
-                        .description("Record content tampered at sequence #" + current.getSequenceNumber() + ". Recomputed hash differs from stored record hash.")
+                        .violationType("MALFORMED_CONTENT")
+                        .expectedHash("Valid Canonical JSON")
+                        .actualHash("MALFORMED")
+                        .description("Record payload or redaction metadata corrupted at sequence #" + current.getSequenceNumber() + ": " + ex.getMessage())
                         .build());
             }
 

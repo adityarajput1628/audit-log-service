@@ -37,7 +37,7 @@ class ArchivedPayloadIntegrityTest {
     }
 
     @Test
-    @DisplayName("Original archived payload verifies intact (PASS)")
+    @DisplayName("1. Original archived payload verifies intact (PASS)")
     void testOriginalArchivedPayloadVerifyPasses() {
         Instant oldTime = Instant.now().minus(40, ChronoUnit.DAYS);
         auditLogService.createEvent(CreateEventRequest.builder()
@@ -57,7 +57,7 @@ class ArchivedPayloadIntegrityTest {
     }
 
     @Test
-    @DisplayName("Mutate archived payload ONLY must cause verification to FAIL")
+    @DisplayName("2. Mutate archived payload ONLY must cause verification to FAIL")
     void testMutateArchivedPayloadFails() {
         Instant oldTime = Instant.now().minus(40, ChronoUnit.DAYS);
         AuditRecord record = auditLogService.createEvent(CreateEventRequest.builder()
@@ -72,8 +72,8 @@ class ArchivedPayloadIntegrityTest {
         retentionService.applyRetentionPolicy(new RetentionRequest(30, false));
 
         AuditRecord archived = repository.findById(record.getId()).orElseThrow();
-        // Mutate payloadJson directly in DB without changing stored recordHash
-        archived.setPayloadJson("{\"_archived\":true,\"_archivedAt\":\"" + archived.getArchivedAt() + "\",\"_retentionWindowDays\":30,\"malicious\":\"extra_data\"}");
+        // Mutate payloadJson ONLY directly in DB without changing stored recordHash, actorId, timestamp, previousHash or redactionsJson
+        archived.setPayloadJson("{\"_archived\":true,\"_archivedAt\":\"" + archived.getArchivedAt() + "\",\"_retentionWindowDays\":30,\"malicious\":\"unauthorized_mutation\"}");
         repository.save(archived);
 
         VerificationResult result = auditLogService.verifyChain();
@@ -83,7 +83,55 @@ class ArchivedPayloadIntegrityTest {
     }
 
     @Test
-    @DisplayName("Mutate actorId ONLY on archived record must cause verification to FAIL")
+    @DisplayName("3. Add additional field to archived payload must cause verification to FAIL")
+    void testArchivedPayloadAdditionalFieldFails() {
+        Instant oldTime = Instant.now().minus(40, ChronoUnit.DAYS);
+        AuditRecord record = auditLogService.createEvent(CreateEventRequest.builder()
+                .eventType("TRANSFER")
+                .actorId("user-1")
+                .resourceType("ACCOUNT")
+                .resourceId("ACC-1")
+                .payload(Map.of("amount", 5000))
+                .timestamp(oldTime)
+                .build());
+
+        retentionService.applyRetentionPolicy(new RetentionRequest(30, false));
+
+        AuditRecord archived = repository.findById(record.getId()).orElseThrow();
+        archived.setPayloadJson("{\"_archived\":true,\"_archivedAt\":\"" + archived.getArchivedAt() + "\",\"_extraField\":\"injected\",\"_retentionWindowDays\":30}");
+        repository.save(archived);
+
+        VerificationResult result = auditLogService.verifyChain();
+        assertThat(result.isIntact()).isFalse();
+        assertThat(result.getViolations().get(0).getViolationType()).isEqualTo("HASH_MISMATCH");
+    }
+
+    @Test
+    @DisplayName("4. Modify value of tombstone field must cause verification to FAIL")
+    void testArchivedPayloadValueModificationFails() {
+        Instant oldTime = Instant.now().minus(40, ChronoUnit.DAYS);
+        AuditRecord record = auditLogService.createEvent(CreateEventRequest.builder()
+                .eventType("TRANSFER")
+                .actorId("user-1")
+                .resourceType("ACCOUNT")
+                .resourceId("ACC-1")
+                .payload(Map.of("amount", 5000))
+                .timestamp(oldTime)
+                .build());
+
+        retentionService.applyRetentionPolicy(new RetentionRequest(30, false));
+
+        AuditRecord archived = repository.findById(record.getId()).orElseThrow();
+        archived.setPayloadJson("{\"_archived\":false,\"_archivedAt\":\"" + archived.getArchivedAt() + "\",\"_retentionWindowDays\":30}");
+        repository.save(archived);
+
+        VerificationResult result = auditLogService.verifyChain();
+        assertThat(result.isIntact()).isFalse();
+        assertThat(result.getViolations().get(0).getViolationType()).isEqualTo("HASH_MISMATCH");
+    }
+
+    @Test
+    @DisplayName("5. Mutate actorId ONLY on archived record must cause verification to FAIL")
     void testMutateActorIdFails() {
         Instant oldTime = Instant.now().minus(40, ChronoUnit.DAYS);
         AuditRecord record = auditLogService.createEvent(CreateEventRequest.builder()
@@ -107,7 +155,7 @@ class ArchivedPayloadIntegrityTest {
     }
 
     @Test
-    @DisplayName("Mutate timestamp ONLY on archived record must cause verification to FAIL")
+    @DisplayName("6. Mutate timestamp ONLY on archived record must cause verification to FAIL")
     void testMutateTimestampFails() {
         Instant oldTime = Instant.now().minus(40, ChronoUnit.DAYS);
         AuditRecord record = auditLogService.createEvent(CreateEventRequest.builder()
@@ -131,7 +179,31 @@ class ArchivedPayloadIntegrityTest {
     }
 
     @Test
-    @DisplayName("Mutate stored hash ONLY on archived record must cause verification to FAIL")
+    @DisplayName("7. Mutate previousHash ONLY on archived record must cause verification to FAIL")
+    void testMutatePreviousHashFails() {
+        Instant oldTime = Instant.now().minus(40, ChronoUnit.DAYS);
+        AuditRecord record = auditLogService.createEvent(CreateEventRequest.builder()
+                .eventType("TRANSFER")
+                .actorId("user-1")
+                .resourceType("ACCOUNT")
+                .resourceId("ACC-1")
+                .payload(Map.of("amount", 5000))
+                .timestamp(oldTime)
+                .build());
+
+        retentionService.applyRetentionPolicy(new RetentionRequest(30, false));
+
+        AuditRecord archived = repository.findById(record.getId()).orElseThrow();
+        archived.setPreviousHash("000000000000000000000000000000000000000000000000000000000000bad1");
+        repository.save(archived);
+
+        VerificationResult result = auditLogService.verifyChain();
+        assertThat(result.isIntact()).isFalse();
+        assertThat(result.getViolations().get(0).getViolationType()).isEqualTo("PREVIOUS_HASH_MISMATCH");
+    }
+
+    @Test
+    @DisplayName("8. Mutate stored recordHash ONLY on archived record must cause verification to FAIL")
     void testMutateStoredHashFails() {
         Instant oldTime = Instant.now().minus(40, ChronoUnit.DAYS);
         AuditRecord record = auditLogService.createEvent(CreateEventRequest.builder()
@@ -155,7 +227,7 @@ class ArchivedPayloadIntegrityTest {
     }
 
     @Test
-    @DisplayName("JSON formatting changes follow canonicalization rules and verify PASS")
+    @DisplayName("9. JSON formatting changes follow canonicalization rules and verify PASS")
     void testJsonFormattingFollowsCanonicalizationRules() {
         Instant oldTime = Instant.now().minus(40, ChronoUnit.DAYS);
         AuditRecord record = auditLogService.createEvent(CreateEventRequest.builder()
@@ -177,5 +249,53 @@ class ArchivedPayloadIntegrityTest {
 
         VerificationResult result = auditLogService.verifyChain();
         assertThat(result.isIntact()).isTrue();
+    }
+
+    @Test
+    @DisplayName("10. Malformed archived payload causes verification to FAIL with MALFORMED_CONTENT")
+    void testMalformedArchivedPayloadFails() {
+        Instant oldTime = Instant.now().minus(40, ChronoUnit.DAYS);
+        AuditRecord record = auditLogService.createEvent(CreateEventRequest.builder()
+                .eventType("TRANSFER")
+                .actorId("user-1")
+                .resourceType("ACCOUNT")
+                .resourceId("ACC-1")
+                .payload(Map.of("amount", 5000))
+                .timestamp(oldTime)
+                .build());
+
+        retentionService.applyRetentionPolicy(new RetentionRequest(30, false));
+
+        AuditRecord archived = repository.findById(record.getId()).orElseThrow();
+        archived.setPayloadJson("{malformed_json_content...");
+        repository.save(archived);
+
+        VerificationResult result = auditLogService.verifyChain();
+        assertThat(result.isIntact()).isFalse();
+        assertThat(result.getViolations().get(0).getViolationType()).isEqualTo("MALFORMED_CONTENT");
+    }
+
+    @Test
+    @DisplayName("11. Corrupt redactions metadata JSON causes verification to FAIL with MALFORMED_CONTENT")
+    void testCorruptIntegrityMetadataFails() {
+        Instant oldTime = Instant.now().minus(40, ChronoUnit.DAYS);
+        AuditRecord record = auditLogService.createEvent(CreateEventRequest.builder()
+                .eventType("TRANSFER")
+                .actorId("user-1")
+                .resourceType("ACCOUNT")
+                .resourceId("ACC-1")
+                .payload(Map.of("amount", 5000))
+                .timestamp(oldTime)
+                .build());
+
+        retentionService.applyRetentionPolicy(new RetentionRequest(30, false));
+
+        AuditRecord archived = repository.findById(record.getId()).orElseThrow();
+        archived.setRedactionsJson("{corrupt_metadata_json...");
+        repository.save(archived);
+
+        VerificationResult result = auditLogService.verifyChain();
+        assertThat(result.isIntact()).isFalse();
+        assertThat(result.getViolations().get(0).getViolationType()).isEqualTo("MALFORMED_CONTENT");
     }
 }
