@@ -201,6 +201,16 @@ public class AuditLogService {
                             .description("Record content tampered at sequence #" + current.getSequenceNumber() + ". Recomputed hash differs from stored record hash.")
                             .build());
                 }
+            } catch (IllegalArgumentException | IllegalStateException ex) {
+                result.setIntact(false);
+                result.getViolations().add(ViolationDetail.builder()
+                        .sequenceNumber(current.getSequenceNumber())
+                        .recordId(current.getId())
+                        .violationType("MALFORMED_CONTENT")
+                        .expectedHash("Valid Canonical JSON")
+                        .actualHash("MALFORMED")
+                        .description("Record payload or redaction metadata corrupted at sequence #" + current.getSequenceNumber() + ": " + ex.getMessage())
+                        .build());
             } catch (Exception ex) {
                 result.setIntact(false);
                 result.getViolations().add(ViolationDetail.builder()
