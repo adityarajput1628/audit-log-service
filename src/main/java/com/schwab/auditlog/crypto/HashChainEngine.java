@@ -17,11 +17,17 @@ import java.util.*;
 public class HashChainEngine {
 
     private final ObjectMapper objectMapper;
+    private final String defaultSecret;
 
-    public HashChainEngine() {
+    @org.springframework.beans.factory.annotation.Autowired
+    public HashChainEngine(@org.springframework.beans.factory.annotation.Value("${schwab.security.hmac.secret}") String defaultSecret) {
+        if (defaultSecret == null || defaultSecret.trim().isEmpty()) {
+            throw new IllegalArgumentException("HMAC secret configuration (schwab.security.hmac.secret / AUDIT_HMAC_SECRET) is required and cannot be blank.");
+        }
         this.objectMapper = new ObjectMapper();
         this.objectMapper.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
         this.objectMapper.configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
+        this.defaultSecret = defaultSecret;
     }
 
     /**
@@ -69,7 +75,7 @@ public class HashChainEngine {
             throw new IllegalArgumentException("Malformed payload JSON: " + e.getMessage(), e);
         }
 
-        String salt = (recordSalt != null && !recordSalt.isEmpty()) ? recordSalt : "SCHWAB_SALT";
+        String salt = (recordSalt != null && !recordSalt.isEmpty()) ? recordSalt : defaultSecret;
         Map<String, Object> normalizedMap = normalizePayloadForHash(payloadMap, redactionsMap, "", salt);
         try {
             String canonicalJson = objectMapper.writeValueAsString(normalizedMap);
@@ -110,13 +116,20 @@ public class HashChainEngine {
     }
 
     /**
-     * HMAC-SHA256 helper method for keyed proof signatures and non-repudiation.
+     * HMAC-SHA256 helper method for keyed proof signatures using injected default secret.
+     */
+    public String hmacSha256(String input) {
+        return hmacSha256(input, this.defaultSecret);
+    }
+
+    /**
+     * HMAC-SHA256 helper method for keyed proof signatures and cryptographic integrity authentication.
      */
     public String hmacSha256(String input, String secretKey) {
         try {
             javax.crypto.Mac mac = javax.crypto.Mac.getInstance("HmacSHA256");
             javax.crypto.spec.SecretKeySpec secretKeySpec = new javax.crypto.spec.SecretKeySpec(
-                    (secretKey != null ? secretKey : "SCHWAB_HMAC_KEY").getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+                    (secretKey != null && !secretKey.isEmpty() ? secretKey : defaultSecret).getBytes(StandardCharsets.UTF_8), "HmacSHA256");
             mac.init(secretKeySpec);
             byte[] hash = mac.doFinal(input.getBytes(StandardCharsets.UTF_8));
             StringBuilder hexString = new StringBuilder(2 * hash.length);
