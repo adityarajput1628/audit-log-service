@@ -1,40 +1,46 @@
-# Candidate Attestation & Evidence Mapping Statement
+# Candidate Attestation & Executable Evidence Mapping Statement
 
 - **Full Name**: Aditya Rajput
 - **Candidate Email**: adityarajput1628@users.noreply.github.com
 - **GitHub Repository**: https://github.com/adityarajput1628/audit-log-service
-- **Repository Branch**: `main`
+- **Repository Branch**: `master`
 - **Assignment Title**: Charles Schwab Audit Log Service – Production System Evaluation
-- **Date Submitted**: 2026-09-23
+- **Base Commit SHA**: `16f0f5676bfed3c76fa0180231282fa07617f2f5` (uncommitted working tree remediation changes ready for staging)
+- **Date Verified**: 2026-09-24
 
 > I, Aditya Rajput, attest that this submission is my own individual work, completed on my own machine and accounts, and that it honestly reflects my development process, architectural choices, and transparent use of AI tools.
 
 ---
 
-## Explicit Claim-to-Evidence & Test Mapping Matrix
+## The Core Verification Rule
 
-| Requirement / Scorecard ID | Claimed Feature / System Guarantee | Implementation Source Location | Verification Test Method | Status |
-| :--- | :--- | :--- | :--- | :--- |
-| **REQ-01 / REQ-04** | Scenario A/B/C Requirement Mapping | `README.md`, `SCENARIO_A/B/C.md` | `AuditLogServiceTest.java`, `ComplianceAndExportTest.java` | **VERIFIED** |
-| **ARCH-01 / ARCH-02** | Layered Spring Architecture & DTOs | [AuditLogController.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/controller/AuditLogController.java), [AuditRecord.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/model/AuditRecord.java) | `SecurityAndAuthorizationTest.java` | **VERIFIED** |
-| **ARCH-03 / TEST-05** | Authenticated Tombstone & Archived Record Integrity Verification | [HashChainEngine.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/crypto/HashChainEngine.java), [AuditLogService.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/service/AuditLogService.java), [RetentionService.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/service/RetentionService.java) | `ArchivedPayloadIntegrityTest.java` (11 scenarios), `AdversarialIntegrityTestSuiteTest.java` (Case B, E) | **VERIFIED** |
-| **ARCH-04 / TEST-06** | Multi-Instance Concurrency & DB Lock Strategy | [AuditRecordRepository.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/repository/AuditRecordRepository.java), [AuditLogService.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/service/AuditLogService.java) | `ConcurrencyAndLockingTest.java` | **VERIFIED** |
-| **SEC-01 / SEC-02 / SEC-05** | External Secret Management & Zero Hardcoded Secrets | [SecurityConfig.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/config/SecurityConfig.java), [ExportService.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/service/ExportService.java), [ComplianceService.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/service/ComplianceService.java) | `@Value` property injection bound to `${AUDIT_HMAC_SECRET}` & credentials | **VERIFIED** |
-| **SEC-08 / BOLA-01** | BOLA / IDOR Tenant & Resource Authorization | [AuditLogController.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/controller/AuditLogController.java), [GlobalExceptionHandler.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/exception/GlobalExceptionHandler.java) | `SecurityAndAuthorizationTest.testBolaResourceAuthorization_nonAuditorCannotAccessOtherActorEvents()` | **VERIFIED** |
-| **SEC-09 / CSRF-CORS** | Stateless Threat Model CSRF Policy & Explicit CORS Origins | [SecurityConfig.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/config/SecurityConfig.java), [ComplianceController.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/controller/ComplianceController.java) | Explicit allowed origins, no wildcard `*` with credentials | **VERIFIED** |
-| **SEC-10 / PROF-01** | Spring Profile Isolation & Production H2 Console Guardrail | `application-dev.properties`, `application-prod.properties`, `application-test.properties` | H2 console strictly disabled (`spring.h2.console.enabled=false`) in prod | **VERIFIED** |
-| **EXC-01 / ERR-01** | Custom Domain Exception Hierarchy & Unswallowed Exception Propagation | [AuditSerializationException.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/exception/AuditSerializationException.java), [AuditSecurityException.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/exception/AuditSecurityException.java), [GlobalExceptionHandler.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/exception/GlobalExceptionHandler.java) | Exception handlers map 403 Forbidden & 422 Unprocessable Entity | **VERIFIED** |
-| **ADV-01 / TEST-15** | Adversarial Integrity Test Suite (Cases A - E) | [AdversarialIntegrityTestSuiteTest.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/test/java/com/schwab/auditlog/service/AdversarialIntegrityTestSuiteTest.java) | 5 explicit adversarial mutation tests (actorId, archived payload, metadata, digest, shortcut bypass) | **VERIFIED** |
-| **TEST-08 / TEST-09** | Executable Test Suite & JaCoCo Coverage Enforcement | `build.gradle` (`jacoco` plugin) | `./gradlew test jacocoTestReport jacocoTestCoverageVerification` | **VERIFIED** |
+> **"Never claim a requirement is satisfied merely because code appears to implement it. Every requirement must have implementation evidence AND executable verification evidence."**
 
 ---
 
-## Reused Materials & Operational Risk Declarations
+## Explicit Claim-to-Evidence & Requirement Matrix
 
-- **Reused Components**: Standard Spring Boot 3.3.0 starter packages (`spring-boot-starter-security`, `spring-boot-starter-validation`, `spring-boot-starter-data-jpa`), Jackson Object Mapper, Lombok, and JUnit 5 / Spring Security Test frameworks.
-- **Operational Risks & Mitigations**:
-  - *Risk*: Single-node in-memory H2 database used for zero-dependency execution.
-  - *Mitigation*: Schema and repository structures are PostgreSQL compliant using standard JPA SQL abstractions; production profile enforces PostgreSQL dialect and validates DDL.
-  - *Risk*: Secret management in deployment environments.
-  - *Mitigation*: Externalized property bindings (`${AUDIT_HMAC_SECRET}`, `${AUDIT_ADMIN_PASS}`) seamlessly integrate with Kubernetes Secrets, AWS Secrets Manager, or HashiCorp Vault without source code modifications.
+| Requirement ID | Description | Code Implementation Evidence | Executable Test Evidence | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **ARCH-01** | Layered Spring Boot Architecture | [AuditLogController.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/controller/AuditLogController.java), [AuditLogService.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/service/AuditLogService.java), [AuditRecordRepository.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/repository/AuditRecordRepository.java) | `SecurityAndAuthorizationComprehensiveTest` | **PASS** |
+| **ARCH-03** | Archived Payload Integrity Verification | [HashChainEngine.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/crypto/HashChainEngine.java), [RetentionService.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/service/RetentionService.java) | `ArchivedPayloadIntegrityTest`, `AdversarialIntegrityTestSuiteTest` | **PASS** |
+| **ARCH-04a** | Multi-Context Concurrency Simulation (H2) | [AuditRecordRepository.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/repository/AuditRecordRepository.java), [AuditLogService.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/service/AuditLogService.java) | `MultiInstanceContextSimulationTest.testTwoIndependentSpringContextsWritingConcurrently` | **PASS** |
+| **ARCH-04b** | Multi-Instance Container Execution (PostgreSQL Testcontainers) | [build.gradle](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/build.gradle) (`org.postgresql:postgresql:42.7.3`), [MultiInstancePostgresTest.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/test/java/com/schwab/auditlog/service/MultiInstancePostgresTest.java) | `MultiInstancePostgresTest` (Testcontainers PostgreSQL 16 code present; test skipped due to host Docker daemon unavailability) | **PARTIAL** |
+| **SEC-01** | Zero Hardcoded Production Secrets | [SecurityConfig.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/config/SecurityConfig.java), [ExportService.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/service/ExportService.java), [ComplianceService.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/service/ComplianceService.java), [RedactionService.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/service/RedactionService.java) | Repository Grep Audit | **PASS** |
+| **SEC-03** | RBAC & Endpoint Authorization | [SecurityConfig.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/config/SecurityConfig.java) | `SecurityAndAuthorizationComprehensiveTest` | **PASS** |
+| **SEC-07** | Profile-Gated Demo Tamper Endpoint | [TamperTestController.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/controller/TamperTestController.java) (`@Profile("!prod")`) | `SecurityAndAuthorizationComprehensiveTest` | **PASS** |
+| **SEC-08** | BOLA / IDOR Tenant Authorization | [AuditLogController.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/controller/AuditLogController.java) | `SecurityAndAuthorizationComprehensiveTest.testBolaResourceAuthorizationForNonAuditor` | **PASS** |
+| **SEC-09** | Stateless CSRF Policy & CORS Enforcement | [SecurityConfig.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/config/SecurityConfig.java) | `SecurityAndAuthorizationComprehensiveTest.testCorsPreflightAllowedOrigins` | **PASS** |
+| **SEC-10** | Production H2 Console Isolation Guardrail | [application-prod.properties](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/resources/application-prod.properties) | `SecurityAndAuthorizationComprehensiveTest` | **PASS** |
+| **EXC-01** | Structured Global Exception Handling | [GlobalExceptionHandler.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/exception/GlobalExceptionHandler.java) | `DetailedCoverageExpansionTest`, `ValidationAndSerializationFailureTest` | **PASS** |
+| **TEST-06** | Executable JaCoCo Coverage Enforcement | [build.gradle](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/build.gradle) (`check.dependsOn jacocoTestCoverageVerification`) | `./gradlew clean check` (88.89% Line, 69.68% Branch Coverage) | **PASS** |
+| **TEST-15** | Adversarial Integrity Test Suite | [AdversarialIntegrityTestSuiteTest.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/test/java/com/schwab/auditlog/service/AdversarialIntegrityTestSuiteTest.java) | 5 explicit tamper mutation tests (Cases A-E) | **PASS** |
 
+---
+
+## Verification Evidence Summary
+- **Total Test Cases**: **62** (61 Passed, 0 Failed, 0 Errors, 1 Skipped)
+- **JaCoCo Line Coverage**: **88.89%** (648/729 lines covered, Threshold: >= 80%)
+- **JaCoCo Branch Coverage**: **69.68%** (131/188 branches covered, Threshold: >= 60%)
+- **Zero Secrets Audit**: 0 secret literals or salt fallback strings in tracked repository files.
+- **Evidence Package Location**: `/evidence/` folder containing interactive JUnit (`evidence/tests/`) and JaCoCo (`evidence/coverage/`) reports.
