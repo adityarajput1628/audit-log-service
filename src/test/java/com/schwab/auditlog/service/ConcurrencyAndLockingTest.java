@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -22,6 +23,7 @@ import java.util.concurrent.Executors;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
+@ActiveProfiles("test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 class ConcurrencyAndLockingTest {
 
@@ -87,5 +89,55 @@ class ConcurrencyAndLockingTest {
         VerificationResult verification = auditLogService.verifyChain();
         assertThat(verification.isIntact()).isTrue();
         assertThat(verification.getTotalRecordsChecked()).isEqualTo(threadCount);
+    }
+
+    @Test
+    @DisplayName("ARCH-04 / TEST-08: Simulated multi-instance concurrent DB transactions handle sequence contention without data loss")
+    void testMultiInstanceConcurrentTransactions() throws InterruptedException {
+        int instanceCount = 20;
+        ExecutorService executor = Executors.newFixedThreadPool(instanceCount);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch doneLatch = new CountDownLatch(instanceCount);
+
+        List<AuditRecord> results = Collections.synchronizedList(new ArrayList<>());
+
+        for (int i = 0; i < instanceCount; i++) {
+            final int nodeIndex = i;
+            executor.submit(() -> {
+                try {
+                    startLatch.await();
+                    CreateEventRequest req = CreateEventRequest.builder()
+                            .eventType("MULTI_NODE_INGEST")
+                            .actorId("node-" + (nodeIndex % 3))
+                            .resourceType("CLUSTER")
+                            .resourceId("NODE-" + nodeIndex)
+                            .payload(Map.of("nodeId", nodeIndex, "timestamp", System.currentTimeMillis()))
+                            .build();
+
+                    AuditRecord record = auditLogService.createEvent(req);
+                    results.add(record);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    doneLatch.countDown();
+                }
+            });
+        }
+
+        startLatch.countDown();
+        doneLatch.await();
+        executor.shutdown();
+
+        assertThat(results).hasSize(instanceCount);
+
+        List<AuditRecord> allInDb = repository.findAllByOrderBySequenceNumberAsc();
+        assertThat(allInDb).hasSize(instanceCount);
+
+        for (int i = 0; i < instanceCount; i++) {
+            assertThat(allInDb.get(i).getSequenceNumber()).isEqualTo((long) (i + 1));
+        }
+
+        VerificationResult verification = auditLogService.verifyChain();
+        assertThat(verification.isIntact()).isTrue();
     }
 }
