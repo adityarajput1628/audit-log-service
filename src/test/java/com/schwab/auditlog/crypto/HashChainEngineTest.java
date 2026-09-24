@@ -15,7 +15,7 @@ class HashChainEngineTest {
 
     @BeforeEach
     void setUp() {
-        hashChainEngine = new HashChainEngine();
+        hashChainEngine = new HashChainEngine("unit_test_hmac_key_placeholder_32bytes");
     }
 
     @Test
