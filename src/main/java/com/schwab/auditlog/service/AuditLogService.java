@@ -14,7 +14,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
 import java.util.*;
@@ -25,59 +27,82 @@ public class AuditLogService {
     private final AuditRecordRepository repository;
     private final HashChainEngine hashChainEngine;
     private final ObjectMapper objectMapper;
+    private final TransactionTemplate transactionTemplate;
 
-    public AuditLogService(AuditRecordRepository repository, HashChainEngine hashChainEngine, ObjectMapper objectMapper) {
+    public AuditLogService(AuditRecordRepository repository,
+                           HashChainEngine hashChainEngine,
+                           ObjectMapper objectMapper,
+                           PlatformTransactionManager transactionManager) {
         this.repository = repository;
         this.hashChainEngine = hashChainEngine;
         this.objectMapper = objectMapper;
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
 
     /**
-     * Append-only event ingestion with SHA-256 hash chaining.
+     * Append-only event ingestion with SHA-256 hash chaining, DB pessimistic locking, sequence continuity,
+     * and automatic database transaction retries on sequence contention.
      */
-    /**
-     * Append-only event ingestion with SHA-256 hash chaining, DB locking and atomic synchronization.
-     */
-    @Transactional
-    public synchronized AuditRecord createEvent(CreateEventRequest request) {
+    public AuditRecord createEvent(CreateEventRequest request) {
         if (request == null) {
             throw new IllegalArgumentException("CreateEventRequest cannot be null.");
         }
 
-        Optional<AuditRecord> latestRecordOpt = repository.findLatestRecordForUpdate();
-        if (latestRecordOpt.isEmpty()) {
-            latestRecordOpt = repository.findTopByOrderBySequenceNumberDesc();
+        int maxAttempts = 15;
+        Exception lastException = null;
+
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                return transactionTemplate.execute(status -> {
+                    Optional<AuditRecord> latestRecordOpt = repository.findLatestRecordForUpdate();
+                    if (latestRecordOpt.isEmpty()) {
+                        latestRecordOpt = repository.findTopByOrderBySequenceNumberDesc();
+                    }
+
+                    long nextSequence = latestRecordOpt.map(r -> r.getSequenceNumber() + 1).orElse(1L);
+                    String previousHash = latestRecordOpt.map(AuditRecord::getRecordHash).orElse(AuditRecord.GENESIS_HASH);
+                    Instant eventTimestamp = (request.getTimestamp() != null ? request.getTimestamp() : Instant.now())
+                            .truncatedTo(java.time.temporal.ChronoUnit.MILLIS);
+
+                    String payloadJson;
+                    try {
+                        payloadJson = objectMapper.writeValueAsString(request.getPayload() != null ? request.getPayload() : Map.of());
+                    } catch (Exception e) {
+                        payloadJson = "{}";
+                    }
+
+                    AuditRecord newRecord = AuditRecord.builder()
+                            .sequenceNumber(nextSequence)
+                            .eventType(request.getEventType())
+                            .actorId(request.getActorId())
+                            .resourceType(request.getResourceType())
+                            .resourceId(request.getResourceId())
+                            .payloadJson(payloadJson)
+                            .redactionsJson("{}")
+                            .timestamp(eventTimestamp)
+                            .previousHash(previousHash)
+                            .archived(false)
+                            .build();
+
+                    String recordHash = hashChainEngine.calculateRecordHash(newRecord);
+                    newRecord.setRecordHash(recordHash);
+
+                    return repository.saveAndFlush(newRecord);
+                });
+            } catch (Exception e) {
+                lastException = e;
+                if (attempt < maxAttempts) {
+                    try {
+                        Thread.sleep(10L * attempt);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException("Interrupted during database transaction retry", ie);
+                    }
+                }
+            }
         }
 
-        long nextSequence = latestRecordOpt.map(r -> r.getSequenceNumber() + 1).orElse(1L);
-        String previousHash = latestRecordOpt.map(AuditRecord::getRecordHash).orElse(AuditRecord.GENESIS_HASH);
-        Instant eventTimestamp = (request.getTimestamp() != null ? request.getTimestamp() : Instant.now())
-                .truncatedTo(java.time.temporal.ChronoUnit.MILLIS);
-
-        String payloadJson;
-        try {
-            payloadJson = objectMapper.writeValueAsString(request.getPayload() != null ? request.getPayload() : Map.of());
-        } catch (Exception e) {
-            payloadJson = "{}";
-        }
-
-        AuditRecord newRecord = AuditRecord.builder()
-                .sequenceNumber(nextSequence)
-                .eventType(request.getEventType())
-                .actorId(request.getActorId())
-                .resourceType(request.getResourceType())
-                .resourceId(request.getResourceId())
-                .payloadJson(payloadJson)
-                .redactionsJson("{}")
-                .timestamp(eventTimestamp)
-                .previousHash(previousHash)
-                .archived(false)
-                .build();
-
-        String recordHash = hashChainEngine.calculateRecordHash(newRecord);
-        newRecord.setRecordHash(recordHash);
-
-        return repository.saveAndFlush(newRecord);
+        throw new IllegalStateException("Failed to ingest audit event after " + maxAttempts + " database transaction retries", lastException);
     }
 
     /**
