@@ -7,6 +7,7 @@ import com.schwab.auditlog.crypto.HashChainEngine.RedactionEntry;
 import com.schwab.auditlog.dto.RedactFieldRequest;
 import com.schwab.auditlog.model.AuditRecord;
 import com.schwab.auditlog.repository.AuditRecordRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,11 +19,16 @@ public class RedactionService {
     private final AuditRecordRepository repository;
     private final HashChainEngine hashChainEngine;
     private final ObjectMapper objectMapper;
+    private final String hmacSecret;
 
-    public RedactionService(AuditRecordRepository repository, HashChainEngine hashChainEngine, ObjectMapper objectMapper) {
+    public RedactionService(AuditRecordRepository repository,
+                            HashChainEngine hashChainEngine,
+                            ObjectMapper objectMapper,
+                            @Value("${schwab.security.hmac.secret}") String hmacSecret) {
         this.repository = repository;
         this.hashChainEngine = hashChainEngine;
         this.objectMapper = objectMapper;
+        this.hmacSecret = hmacSecret;
     }
 
     /**
@@ -47,7 +53,7 @@ public class RedactionService {
             }
 
             String fieldPath = request.getFieldPath();
-            String salt = record.getPreviousHash() != null ? record.getPreviousHash() : "SCHWAB_SALT";
+            String salt = record.getPreviousHash() != null ? record.getPreviousHash() : hmacSecret;
 
             Object rawValue = extractAndRedactField(payloadMap, fieldPath, "");
 

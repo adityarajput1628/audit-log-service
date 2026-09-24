@@ -25,7 +25,7 @@ public class ComplianceService {
     private final AuditLogService auditLogService;
     private final ObjectMapper objectMapper;
 
-    @Value("${schwab.security.hmac.secret:schwab_dev_hmac_secret_key_32bytes_minimum_length}")
+    @Value("${schwab.security.hmac.secret}")
     private String hmacSecret;
 
     public ComplianceService(AuditRecordRepository repository, HashChainEngine hashChainEngine, AuditLogService auditLogService, ObjectMapper objectMapper) {
