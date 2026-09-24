@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta http-equiv="x-ua-compatible" content="IE=edge"/>
+<title>Test results - com.schwab.auditlog.security.SecurityAndAuthorizationComprehensiveTest</title>
+<link href="../css/base-style.css" rel="stylesheet" type="text/css"/>
+<link href="../css/style.css" rel="stylesheet" type="text/css"/>
+<script src="../js/report.js" type="text/javascript"></script>
+</head>
+<body>
+<div id="content">
+<div class="breadcrumbs">
+<a class="breadcrumb" href="../index.html">all</a> &gt; 
+<span class="breadcrumb">com.schwab.auditlog.security.SecurityAndAuthorizationComprehensiveTest</span>
+</div>
+<div class="tab-container">
+<ul class="tabLinks">
+<li>
+<a class="successGroup" href="#">Gradle Test Run :test</a>
+</li>
+</ul>
+<div class="tab">
+<h2>Gradle Test Run :test</h2>
+<h1>SecurityAndAuthorizationComprehensiveTest</h1>
+<div class="tab-container">
+<ul class="tabLinks">
+<li>
+<a class="" href="#">summary</a>
+</li>
+<li>
+<a class="" href="#">standard output</a>
+</li>
+</ul>
+<div class="tab">
+<h2>summary</h2>
+<div>
+<div class="summary">
+<table>
+<tr>
+<td>
+<div class="summaryGroup">
+<table>
+<tr>
+<td>
+<div class="infoBox">
+<div class="counter">6</div>
+<p>tests</p>
+</div>
+</td>
+<td>
+<div class="infoBox">
+<div class="counter">0</div>
+<p>failures</p>
+</div>
+</td>
+<td>
+<div class="infoBox">
+<div class="counter">0</div>
+<p>skipped</p>
+</div>
+</td>
+<td>
+<div class="infoBox duration">
+<div class="counter">19.819s</div>
+<p>duration</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</td>
+<td>
+<div class="infoBox success successRate">
+<div class="percent">100%</div>
+<p>successful</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<table class="test-results sortable">
+<thead>
+<tr>
+<th>Child</th>
+<th>Name</th>
+<th data-sort-default="desc">Tests</th>
+<th data-sort-default="desc">Failures</th>
+<th data-sort-default="desc">Skipped</th>
+<th data-sort-default="desc">Duration</th>
+<th>Success rate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="success">
+<a href="testBolaResourceAuthorizationForNonAuditor().html">SEC-04: BOLA/IDOR protection - INGEST role restricted to own actor queries</a>
+</td>
+<td class="path">testBolaResourceAuthorizationForNonAuditor()</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td data-sort-value="3093">3.093s</td>
+<td class="success" data-sort-value="100">100%</td>
+</tr>
+<tr>
+<td class="success">
+<a href="testCorsPreflightAllowedOrigins().html">SEC-05: CORS policy enforces configured origin restrictions during preflight OPTIONS requests</a>
+</td>
+<td class="path">testCorsPreflightAllowedOrigins()</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td data-sort-value="1637">1.637s</td>
+<td class="success" data-sort-value="100">100%</td>
+</tr>
+<tr>
+<td class="success">
+<a href="testIngestRoleCannotExecuteAdminActions().html">SEC-03: RBAC role isolation prevents INGEST role from executing ADMIN operations</a>
+</td>
+<td class="path">testIngestRoleCannotExecuteAdminActions()</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td data-sort-value="3095">3.095s</td>
+<td class="success" data-sort-value="100">100%</td>
+</tr>
+<tr>
+<td class="success">
+<a href="testInvalidCredentialsReturn401().html">SEC-02: Invalid credentials return 401 Unauthorized</a>
+</td>
+<td class="path">testInvalidCredentialsReturn401()</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td data-sort-value="2511">2.511s</td>
+<td class="success" data-sort-value="100">100%</td>
+</tr>
+<tr>
+<td class="success">
+<a href="testStatelessCsrfHeaderAuth().html">SEC-06: CSRF protection stateless policy permits header-authenticated REST requests without session tokens</a>
+</td>
+<td class="path">testStatelessCsrfHeaderAuth()</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td data-sort-value="3561">3.561s</td>
+<td class="success" data-sort-value="100">100%</td>
+</tr>
+<tr>
+<td class="success">
+<a href="testUnauthenticatedAccessReturns401().html">SEC-01: Unauthenticated requests return 401 Unauthorized across all protected API routes</a>
+</td>
+<td class="path">testUnauthenticatedAccessReturns401()</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td data-sort-value="2013">2.013s</td>
+<td class="success" data-sort-value="100">100%</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="tab">
+<h2>standard output</h2>
+<span class="code">
+<pre id="root-0-test-stdout-com.schwab.auditlog.security.SecurityAndAuthorizationComprehensiveTest">2026-09-24T12:02:28.590+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.schwab.auditlog.security.SecurityAndAuthorizationComprehensiveTest]: SecurityAndAuthorizationComprehensiveTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-09-24T12:02:28.647+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.schwab.auditlog.AuditLogServiceApplication for test class com.schwab.auditlog.security.SecurityAndAuthorizationComprehensiveTest
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.0)
+
+2026-09-24T12:02:28.762+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] ecurityAndAuthorizationComprehensiveTest : Starting SecurityAndAuthorizationComprehensiveTest using Java 17.0.2 with PID 17076 (started by SUPREM HAJARE in C:\Users\SUPREM HAJARE\Documents\adityaProject)
+2026-09-24T12:02:28.766+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] ecurityAndAuthorizationComprehensiveTest : The following 1 profile is active: &quot;test&quot;
+2026-09-24T12:02:29.648+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-09-24T12:02:29.683+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 34 ms. Found 1 JPA repository interface.
+2026-09-24T12:02:30.113+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-09-24T12:02:30.122+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-09-24T12:02:30.147+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-09-24T12:02:30.151+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-4 - Starting...
+2026-09-24T12:02:30.154+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] com.zaxxer.hikari.pool.HikariPool        : HikariPool-4 - Added connection conn30: url=jdbc:h2:mem:testdb user=SA
+2026-09-24T12:02:30.155+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-4 - Start completed.
+2026-09-24T12:02:30.156+05:30  WARN 17076 --- [audit-log-service-test] [    Test worker] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-09-24T12:02:30.266+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-09-24T12:02:30.280+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-09-24T12:02:30.743+05:30  WARN 17076 --- [audit-log-service-test] [    Test worker] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-09-24T12:02:31.132+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name userDetailsService
+2026-09-24T12:02:31.249+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.s.b.a.w.s.WelcomePageHandlerMapping    : Adding welcome page: class path resource [static/index.html]
+2026-09-24T12:02:31.541+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 1 endpoint beneath base path '/actuator'
+2026-09-24T12:02:31.658+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@1ce14b2e, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@10316997, org.springframework.security.web.context.SecurityContextHolderFilter@234ff2ac, org.springframework.security.web.header.HeaderWriterFilter@25061c11, org.springframework.web.filter.CorsFilter@2579a31c, org.springframework.security.web.authentication.logout.LogoutFilter@114183c8, org.springframework.security.web.authentication.www.BasicAuthenticationFilter@1d323dd8, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@d5a417e, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@22bed027, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@6a695255, org.springframework.security.web.session.SessionManagementFilter@46068d5e, org.springframework.security.web.access.ExceptionTranslationFilter@40b24b8b, org.springframework.security.web.access.intercept.AuthorizationFilter@5a5a36f0]
+2026-09-24T12:02:32.375+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-09-24T12:02:32.377+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-09-24T12:02:32.381+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 3 ms
+2026-09-24T12:02:32.456+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] ecurityAndAuthorizationComprehensiveTest : Started SecurityAndAuthorizationComprehensiveTest in 3.794 seconds (process running for 28.577)
+</pre>
+<button class="clipboard-copy-btn" aria-label="Copy to clipboard" data-copy-element-id="root-0-test-stdout-com.schwab.auditlog.security.SecurityAndAuthorizationComprehensiveTest">Copy</button>
+</span>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<p>
+<div>
+<label class="hidden" id="label-for-line-wrapping-toggle" for="line-wrapping-toggle">Wrap lines
+<input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
+</label>
+</div>Generated by 
+<a href="https://www.gradle.org">Gradle 9.7.1</a> at 24-Sep-2026, 12:03:43 pm</p>
+</div>
+</div>
+</body>
+</html>

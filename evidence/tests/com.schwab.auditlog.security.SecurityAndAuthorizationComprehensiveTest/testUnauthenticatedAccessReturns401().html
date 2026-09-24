@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta http-equiv="x-ua-compatible" content="IE=edge"/>
+<title>Test results - testUnauthenticatedAccessReturns401()</title>
+<link href="../css/base-style.css" rel="stylesheet" type="text/css"/>
+<link href="../css/style.css" rel="stylesheet" type="text/css"/>
+<script src="../js/report.js" type="text/javascript"></script>
+</head>
+<body>
+<div id="content">
+<div class="breadcrumbs">
+<a class="breadcrumb" href="../index.html">all</a> &gt; 
+<a class="breadcrumb" href="index.html">com.schwab.auditlog.security.SecurityAndAuthorizationComprehensiveTest</a> &gt; 
+<span class="breadcrumb">testUnauthenticatedAccessReturns401()</span>
+</div>
+<div class="tab-container">
+<ul class="tabLinks">
+<li>
+<a class="successGroup" href="#">Gradle Test Run :test</a>
+</li>
+</ul>
+<div class="tab">
+<h2>Gradle Test Run :test</h2>
+<h1>SEC-01: Unauthenticated requests return 401 Unauthorized across all protected API routes</h1>
+<div class="tab-container">
+<ul class="tabLinks">
+<li>
+<a class="" href="#">summary</a>
+</li>
+<li>
+<a class="" href="#">standard output</a>
+</li>
+</ul>
+<div class="tab">
+<h2>summary</h2>
+<div>
+<div class="summary">
+<table>
+<tr>
+<td>
+<div class="summaryGroup">
+<table>
+<tr>
+<td>
+<div class="infoBox">
+<div class="counter">1</div>
+<p>tests</p>
+</div>
+</td>
+<td>
+<div class="infoBox">
+<div class="counter">0</div>
+<p>failures</p>
+</div>
+</td>
+<td>
+<div class="infoBox">
+<div class="counter">0</div>
+<p>skipped</p>
+</div>
+</td>
+<td>
+<div class="infoBox duration">
+<div class="counter">2.013s</div>
+<p>duration</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</td>
+<td>
+<div class="infoBox success successRate">
+<div class="percent">100%</div>
+<p>successful</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="tab">
+<h2>standard output</h2>
+<span class="code">
+<pre id="root-0-test-stdout-testUnauthenticatedAccessReturns401()">2026-09-24T12:02:44.742+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-09-24T12:02:44.744+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-8 - Shutdown initiated...
+2026-09-24T12:02:44.747+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-8 - Shutdown completed.
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.0)
+
+2026-09-24T12:02:44.777+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] ecurityAndAuthorizationComprehensiveTest : Starting SecurityAndAuthorizationComprehensiveTest using Java 17.0.2 with PID 17076 (started by SUPREM HAJARE in C:\Users\SUPREM HAJARE\Documents\adityaProject)
+2026-09-24T12:02:44.777+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] ecurityAndAuthorizationComprehensiveTest : The following 1 profile is active: &quot;test&quot;
+2026-09-24T12:02:45.214+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-09-24T12:02:45.229+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 13 ms. Found 1 JPA repository interface.
+2026-09-24T12:02:45.383+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-09-24T12:02:45.389+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-09-24T12:02:45.403+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-09-24T12:02:45.406+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-9 - Starting...
+2026-09-24T12:02:45.408+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] com.zaxxer.hikari.pool.HikariPool        : HikariPool-9 - Added connection conn80: url=jdbc:h2:mem:testdb user=SA
+2026-09-24T12:02:45.408+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-9 - Start completed.
+2026-09-24T12:02:45.409+05:30  WARN 17076 --- [audit-log-service-test] [    Test worker] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-09-24T12:02:45.492+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-09-24T12:02:45.502+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-09-24T12:02:45.869+05:30  WARN 17076 --- [audit-log-service-test] [    Test worker] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-09-24T12:02:46.131+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name userDetailsService
+2026-09-24T12:02:46.180+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.s.b.a.w.s.WelcomePageHandlerMapping    : Adding welcome page: class path resource [static/index.html]
+2026-09-24T12:02:46.297+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 1 endpoint beneath base path '/actuator'
+2026-09-24T12:02:46.340+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@1d134d4d, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@2dae79a8, org.springframework.security.web.context.SecurityContextHolderFilter@8144c8e, org.springframework.security.web.header.HeaderWriterFilter@78f22ce4, org.springframework.web.filter.CorsFilter@22e6e08b, org.springframework.security.web.authentication.logout.LogoutFilter@35818cfc, org.springframework.security.web.authentication.www.BasicAuthenticationFilter@421e426d, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@328da45d, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@32843da5, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@78ff056b, org.springframework.security.web.session.SessionManagementFilter@4b52e578, org.springframework.security.web.access.ExceptionTranslationFilter@9560164, org.springframework.security.web.access.intercept.AuthorizationFilter@2bd5f2d9]
+2026-09-24T12:02:46.686+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-09-24T12:02:46.687+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-09-24T12:02:46.690+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 3 ms
+2026-09-24T12:02:46.723+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] ecurityAndAuthorizationComprehensiveTest : Started SecurityAndAuthorizationComprehensiveTest in 1.972 seconds (process running for 42.843)
+</pre>
+<button class="clipboard-copy-btn" aria-label="Copy to clipboard" data-copy-element-id="root-0-test-stdout-testUnauthenticatedAccessReturns401()">Copy</button>
+</span>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<p>
+<div>
+<label class="hidden" id="label-for-line-wrapping-toggle" for="line-wrapping-toggle">Wrap lines
+<input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
+</label>
+</div>Generated by 
+<a href="https://www.gradle.org">Gradle 9.7.1</a> at 24-Sep-2026, 12:03:44 pm</p>
+</div>
+</div>
+</body>
+</html>

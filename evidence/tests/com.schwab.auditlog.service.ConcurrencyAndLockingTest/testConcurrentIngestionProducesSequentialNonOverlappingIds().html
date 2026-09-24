@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta http-equiv="x-ua-compatible" content="IE=edge"/>
+<title>Test results - testConcurrentIngestionProducesSequentialNonOverlappingIds()</title>
+<link href="../css/base-style.css" rel="stylesheet" type="text/css"/>
+<link href="../css/style.css" rel="stylesheet" type="text/css"/>
+<script src="../js/report.js" type="text/javascript"></script>
+</head>
+<body>
+<div id="content">
+<div class="breadcrumbs">
+<a class="breadcrumb" href="../index.html">all</a> &gt; 
+<a class="breadcrumb" href="index.html">com.schwab.auditlog.service.ConcurrencyAndLockingTest</a> &gt; 
+<span class="breadcrumb">testConcurrentIngestionProducesSequentialNonOverlappingIds()</span>
+</div>
+<div class="tab-container">
+<ul class="tabLinks">
+<li>
+<a class="successGroup" href="#">Gradle Test Run :test</a>
+</li>
+</ul>
+<div class="tab">
+<h2>Gradle Test Run :test</h2>
+<h1>Concurrent event ingestions produce strict monotonic non-overlapping sequence numbers</h1>
+<div class="tab-container">
+<ul class="tabLinks">
+<li>
+<a class="" href="#">summary</a>
+</li>
+<li>
+<a class="" href="#">standard output</a>
+</li>
+</ul>
+<div class="tab">
+<h2>summary</h2>
+<div>
+<div class="summary">
+<table>
+<tr>
+<td>
+<div class="summaryGroup">
+<table>
+<tr>
+<td>
+<div class="infoBox">
+<div class="counter">1</div>
+<p>tests</p>
+</div>
+</td>
+<td>
+<div class="infoBox">
+<div class="counter">0</div>
+<p>failures</p>
+</div>
+</td>
+<td>
+<div class="infoBox">
+<div class="counter">0</div>
+<p>skipped</p>
+</div>
+</td>
+<td>
+<div class="infoBox duration">
+<div class="counter">3.855s</div>
+<p>duration</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</td>
+<td>
+<div class="infoBox success successRate">
+<div class="percent">100%</div>
+<p>successful</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="tab">
+<h2>standard output</h2>
+<span class="code">
+<pre id="root-0-test-stdout-testConcurrentIngestionProducesSequentialNonOverlappingIds()">2026-09-24T12:02:21.451+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-09-24T12:02:21.460+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-09-24T12:02:21.463+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.0)
+
+2026-09-24T12:02:21.528+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] c.s.a.service.ConcurrencyAndLockingTest  : Starting ConcurrencyAndLockingTest using Java 17.0.2 with PID 17076 (started by SUPREM HAJARE in C:\Users\SUPREM HAJARE\Documents\adityaProject)
+2026-09-24T12:02:21.529+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] c.s.a.service.ConcurrencyAndLockingTest  : The following 1 profile is active: &quot;test&quot;
+2026-09-24T12:02:22.001+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-09-24T12:02:22.024+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 22 ms. Found 1 JPA repository interface.
+2026-09-24T12:02:22.244+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-09-24T12:02:22.252+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-09-24T12:02:22.280+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-09-24T12:02:22.283+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Starting...
+2026-09-24T12:02:22.287+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] com.zaxxer.hikari.pool.HikariPool        : HikariPool-2 - Added connection conn10: url=jdbc:h2:mem:testdb user=SA
+2026-09-24T12:02:22.287+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Start completed.
+2026-09-24T12:02:22.288+05:30  WARN 17076 --- [audit-log-service-test] [    Test worker] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-09-24T12:02:22.383+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-09-24T12:02:22.389+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-09-24T12:02:22.725+05:30  WARN 17076 --- [audit-log-service-test] [    Test worker] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-09-24T12:02:22.984+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name userDetailsService
+2026-09-24T12:02:23.055+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.s.b.a.w.s.WelcomePageHandlerMapping    : Adding welcome page: class path resource [static/index.html]
+2026-09-24T12:02:23.251+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 1 endpoint beneath base path '/actuator'
+2026-09-24T12:02:23.325+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@1587ce57, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@2bb8b995, org.springframework.security.web.context.SecurityContextHolderFilter@4f53d683, org.springframework.security.web.header.HeaderWriterFilter@653ea1dd, org.springframework.web.filter.CorsFilter@67875fb1, org.springframework.security.web.authentication.logout.LogoutFilter@478f7762, org.springframework.security.web.authentication.www.BasicAuthenticationFilter@14255496, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@70129c76, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@742bca8e, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@5a544596, org.springframework.security.web.session.SessionManagementFilter@5ee57ecd, org.springframework.security.web.access.ExceptionTranslationFilter@631f8fdd, org.springframework.security.web.access.intercept.AuthorizationFilter@4ff7727b]
+2026-09-24T12:02:23.779+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] c.s.a.service.ConcurrencyAndLockingTest  : Started ConcurrencyAndLockingTest in 2.31 seconds (process running for 19.9)
+2026-09-24T12:02:24.862+05:30  WARN 17076 --- [audit-log-service-test] [pool-2-thread-3] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 23505, SQLState: 23505
+2026-09-24T12:02:24.863+05:30 ERROR 17076 --- [audit-log-service-test] [pool-2-thread-3] o.h.engine.jdbc.spi.SqlExceptionHelper   : Unique index or primary key violation: &quot;PUBLIC.CONSTRAINT_INDEX_F ON PUBLIC.AUDIT_RECORDS(SEQUENCE_NUMBER NULLS FIRST) VALUES ( /* 5 */ CAST(1 AS BIGINT) )&quot;; SQL statement:
+insert into audit_records (actor_id,archived,archived_at,event_type,payload_json,previous_hash,record_hash,redactions_json,resource_id,resource_type,sequence_number,timestamp,id) values (?,?,?,?,?,?,?,?,?,?,?,?,default) [23505-224]
+2026-09-24T12:02:24.864+05:30  WARN 17076 --- [audit-log-service-test] [pool-2-thread-6] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 23505, SQLState: 23505
+2026-09-24T12:02:24.864+05:30 ERROR 17076 --- [audit-log-service-test] [pool-2-thread-6] o.h.engine.jdbc.spi.SqlExceptionHelper   : Unique index or primary key violation: &quot;PUBLIC.CONSTRAINT_INDEX_F ON PUBLIC.AUDIT_RECORDS(SEQUENCE_NUMBER NULLS FIRST) VALUES ( /* 5 */ CAST(1 AS BIGINT) )&quot;; SQL statement:
+insert into audit_records (actor_id,archived,archived_at,event_type,payload_json,previous_hash,record_hash,redactions_json,resource_id,resource_type,sequence_number,timestamp,id) values (?,?,?,?,?,?,?,?,?,?,?,?,default) [23505-224]
+2026-09-24T12:02:24.862+05:30  WARN 17076 --- [audit-log-service-test] [pool-2-thread-1] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 23505, SQLState: 23505
+2026-09-24T12:02:24.864+05:30 ERROR 17076 --- [audit-log-service-test] [pool-2-thread-1] o.h.engine.jdbc.spi.SqlExceptionHelper   : Unique index or primary key violation: &quot;PUBLIC.CONSTRAINT_INDEX_F ON PUBLIC.AUDIT_RECORDS(SEQUENCE_NUMBER NULLS FIRST) VALUES ( /* 5 */ CAST(1 AS BIGINT) )&quot;; SQL statement:
+insert into audit_records (actor_id,archived,archived_at,event_type,payload_json,previous_hash,record_hash,redactions_json,resource_id,resource_type,sequence_number,timestamp,id) values (?,?,?,?,?,?,?,?,?,?,?,?,default) [23505-224]
+2026-09-24T12:02:24.862+05:30  WARN 17076 --- [audit-log-service-test] [pool-2-thread-5] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 23505, SQLState: 23505
+2026-09-24T12:02:24.865+05:30 ERROR 17076 --- [audit-log-service-test] [pool-2-thread-5] o.h.engine.jdbc.spi.SqlExceptionHelper   : Unique index or primary key violation: &quot;PUBLIC.CONSTRAINT_INDEX_F ON PUBLIC.AUDIT_RECORDS(SEQUENCE_NUMBER NULLS FIRST) VALUES ( /* 5 */ CAST(1 AS BIGINT) )&quot;; SQL statement:
+insert into audit_records (actor_id,archived,archived_at,event_type,payload_json,previous_hash,record_hash,redactions_json,resource_id,resource_type,sequence_number,timestamp,id) values (?,?,?,?,?,?,?,?,?,?,?,?,default) [23505-224]
+2026-09-24T12:02:24.862+05:30  WARN 17076 --- [audit-log-service-test] [pool-2-thread-8] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 23505, SQLState: 23505
+2026-09-24T12:02:24.863+05:30  WARN 17076 --- [audit-log-service-test] [pool-2-thread-2] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 23505, SQLState: 23505
+2026-09-24T12:02:24.862+05:30  WARN 17076 --- [audit-log-service-test] [pool-2-thread-4] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 23505, SQLState: 23505
+2026-09-24T12:02:24.862+05:30  WARN 17076 --- [audit-log-service-test] [pool-2-thread-9] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 23505, SQLState: 23505
+2026-09-24T12:02:24.868+05:30 ERROR 17076 --- [audit-log-service-test] [pool-2-thread-4] o.h.engine.jdbc.spi.SqlExceptionHelper   : Unique index or primary key violation: &quot;PUBLIC.CONSTRAINT_INDEX_F ON PUBLIC.AUDIT_RECORDS(SEQUENCE_NUMBER NULLS FIRST) VALUES ( /* 5 */ CAST(1 AS BIGINT) )&quot;; SQL statement:
+insert into audit_records (actor_id,archived,archived_at,event_type,payload_json,previous_hash,record_hash,redactions_json,resource_id,resource_type,sequence_number,timestamp,id) values (?,?,?,?,?,?,?,?,?,?,?,?,default) [23505-224]
+2026-09-24T12:02:24.864+05:30  WARN 17076 --- [audit-log-service-test] [pool-2-thread-7] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 23505, SQLState: 23505
+2026-09-24T12:02:24.867+05:30 ERROR 17076 --- [audit-log-service-test] [pool-2-thread-8] o.h.engine.jdbc.spi.SqlExceptionHelper   : Unique index or primary key violation: &quot;PUBLIC.CONSTRAINT_INDEX_F ON PUBLIC.AUDIT_RECORDS(SEQUENCE_NUMBER NULLS FIRST) VALUES ( /* 5 */ CAST(1 AS BIGINT) )&quot;; SQL statement:
+insert into audit_records (actor_id,archived,archived_at,event_type,payload_json,previous_hash,record_hash,redactions_json,resource_id,resource_type,sequence_number,timestamp,id) values (?,?,?,?,?,?,?,?,?,?,?,?,default) [23505-224]
+2026-09-24T12:02:24.868+05:30 ERROR 17076 --- [audit-log-service-test] [pool-2-thread-7] o.h.engine.jdbc.spi.SqlExceptionHelper   : Unique index or primary key violation: &quot;PUBLIC.CONSTRAINT_INDEX_F ON PUBLIC.AUDIT_RECORDS(SEQUENCE_NUMBER NULLS FIRST) VALUES ( /* 5 */ CAST(1 AS BIGINT) )&quot;; SQL statement:
+insert into audit_records (actor_id,archived,archived_at,event_type,payload_json,previous_hash,record_hash,redactions_json,resource_id,resource_type,sequence_number,timestamp,id) values (?,?,?,?,?,?,?,?,?,?,?,?,default) [23505-224]
+2026-09-24T12:02:24.867+05:30 ERROR 17076 --- [audit-log-service-test] [pool-2-thread-2] o.h.engine.jdbc.spi.SqlExceptionHelper   : Unique index or primary key violation: &quot;PUBLIC.CONSTRAINT_INDEX_F ON PUBLIC.AUDIT_RECORDS(SEQUENCE_NUMBER NULLS FIRST) VALUES ( /* 5 */ CAST(1 AS BIGINT) )&quot;; SQL statement:
+insert into audit_records (actor_id,archived,archived_at,event_type,payload_json,previous_hash,record_hash,redactions_json,resource_id,resource_type,sequence_number,timestamp,id) values (?,?,?,?,?,?,?,?,?,?,?,?,default) [23505-224]
+2026-09-24T12:02:24.868+05:30 ERROR 17076 --- [audit-log-service-test] [pool-2-thread-9] o.h.engine.jdbc.spi.SqlExceptionHelper   : Unique index or primary key violation: &quot;PUBLIC.CONSTRAINT_INDEX_F ON PUBLIC.AUDIT_RECORDS(SEQUENCE_NUMBER NULLS FIRST) VALUES ( /* 5 */ CAST(1 AS BIGINT) )&quot;; SQL statement:
+insert into audit_records (actor_id,archived,archived_at,event_type,payload_json,previous_hash,record_hash,redactions_json,resource_id,resource_type,sequence_number,timestamp,id) values (?,?,?,?,?,?,?,?,?,?,?,?,default) [23505-224]
+2026-09-24T12:02:24.933+05:30  WARN 17076 --- [audit-log-service-test] [pool-2-thread-4] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 23505, SQLState: 23505
+2026-09-24T12:02:24.934+05:30 ERROR 17076 --- [audit-log-service-test] [pool-2-thread-4] o.h.engine.jdbc.spi.SqlExceptionHelper   : Unique index or primary key violation: &quot;PUBLIC.CONSTRAINT_INDEX_F ON PUBLIC.AUDIT_RECORDS(SEQUENCE_NUMBER NULLS FIRST) VALUES ( /* 869 */ CAST(2 AS BIGINT) )&quot;; SQL statement:
+insert into audit_records (actor_id,archived,archived_at,event_type,payload_json,previous_hash,record_hash,redactions_json,resource_id,resource_type,sequence_number,timestamp,id) values (?,?,?,?,?,?,?,?,?,?,?,?,default) [23505-224]
+2026-09-24T12:02:24.939+05:30  WARN 17076 --- [audit-log-service-test] [pool-2-thread-9] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 23505, SQLState: 23505
+2026-09-24T12:02:24.940+05:30 ERROR 17076 --- [audit-log-service-test] [pool-2-thread-9] o.h.engine.jdbc.spi.SqlExceptionHelper   : Unique index or primary key violation: &quot;PUBLIC.CONSTRAINT_INDEX_F ON PUBLIC.AUDIT_RECORDS(SEQUENCE_NUMBER NULLS FIRST) VALUES ( /* 869 */ CAST(2 AS BIGINT) )&quot;; SQL statement:
+insert into audit_records (actor_id,archived,archived_at,event_type,payload_json,previous_hash,record_hash,redactions_json,resource_id,resource_type,sequence_number,timestamp,id) values (?,?,?,?,?,?,?,?,?,?,?,?,default) [23505-224]
+2026-09-24T12:02:24.947+05:30  WARN 17076 --- [audit-log-service-test] [pool-2-thread-1] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 23505, SQLState: 23505
+2026-09-24T12:02:24.948+05:30 ERROR 17076 --- [audit-log-service-test] [pool-2-thread-1] o.h.engine.jdbc.spi.SqlExceptionHelper   : Unique index or primary key violation: &quot;PUBLIC.CONSTRAINT_INDEX_F ON PUBLIC.AUDIT_RECORDS(SEQUENCE_NUMBER NULLS FIRST) VALUES ( /* 869 */ CAST(2 AS BIGINT) )&quot;; SQL statement:
+insert into audit_records (actor_id,archived,archived_at,event_type,payload_json,previous_hash,record_hash,redactions_json,resource_id,resource_type,sequence_number,timestamp,id) values (?,?,?,?,?,?,?,?,?,?,?,?,default) [23505-224]
+2026-09-24T12:02:24.953+05:30  WARN 17076 --- [audit-log-service-test] [pool-2-thread-6] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 23505, SQLState: 23505
+2026-09-24T12:02:24.953+05:30 ERROR 17076 --- [audit-log-service-test] [pool-2-thread-6] o.h.engine.jdbc.spi.SqlExceptionHelper   : Unique index or primary key violation: &quot;PUBLIC.CONSTRAINT_INDEX_F ON PUBLIC.AUDIT_RECORDS(SEQUENCE_NUMBER NULLS FIRST) VALUES ( /* 869 */ CAST(2 AS BIGINT) )&quot;; SQL statement:
+insert into audit_records (actor_id,archived,archived_at,event_type,payload_json,previous_hash,record_hash,redactions_json,resource_id,resource_type,sequence_number,timestamp,id) values (?,?,?,?,?,?,?,?,?,?,?,?,default) [23505-224]
+2026-09-24T12:02:24.959+05:30  WARN 17076 --- [audit-log-service-test] [pool-2-thread-8] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 23505, SQLState: 23505
+2026-09-24T12:02:24.960+05:30 ERROR 17076 --- [audit-log-service-test] [pool-2-thread-8] o.h.engine.jdbc.spi.SqlExceptionHelper   : Unique index or primary key violation: &quot;PUBLIC.CONSTRAINT_INDEX_F ON PUBLIC.AUDIT_RECORDS(SEQUENCE_NUMBER NULLS FIRST) VALUES ( /* 869 */ CAST(2 AS BIGINT) )&quot;; SQL statement:
+insert into audit_records (actor_id,archived,archived_at,event_type,payload_json,previous_hash,record_hash,redactions_json,resource_id,resource_type,sequence_number,timestamp,id) values (?,?,?,?,?,?,?,?,?,?,?,?,default) [23505-224]
+2026-09-24T12:02:24.967+05:30  WARN 17076 --- [audit-log-service-test] [pool-2-thread-3] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 23505, SQLState: 23505
+2026-09-24T12:02:24.967+05:30 ERROR 17076 --- [audit-log-service-test] [pool-2-thread-3] o.h.engine.jdbc.spi.SqlExceptionHelper   : Unique index or primary key violation: &quot;PUBLIC.CONSTRAINT_INDEX_F ON PUBLIC.AUDIT_RECORDS(SEQUENCE_NUMBER NULLS FIRST) VALUES ( /* 869 */ CAST(2 AS BIGINT) )&quot;; SQL statement:
+insert into audit_records (actor_id,archived,archived_at,event_type,payload_json,previous_hash,record_hash,redactions_json,resource_id,resource_type,sequence_number,timestamp,id) values (?,?,?,?,?,?,?,?,?,?,?,?,default) [23505-224]
+2026-09-24T12:02:24.974+05:30  WARN 17076 --- [audit-log-service-test] [pool-2-thread-5] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 23505, SQLState: 23505
+2026-09-24T12:02:24.975+05:30 ERROR 17076 --- [audit-log-service-test] [pool-2-thread-5] o.h.engine.jdbc.spi.SqlExceptionHelper   : Unique index or primary key violation: &quot;PUBLIC.CONSTRAINT_INDEX_F ON PUBLIC.AUDIT_RECORDS(SEQUENCE_NUMBER NULLS FIRST) VALUES ( /* 869 */ CAST(2 AS BIGINT) )&quot;; SQL statement:
+insert into audit_records (actor_id,archived,archived_at,event_type,payload_json,previous_hash,record_hash,redactions_json,resource_id,resource_type,sequence_number,timestamp,id) values (?,?,?,?,?,?,?,?,?,?,?,?,default) [23505-224]
+2026-09-24T12:02:24.983+05:30  WARN 17076 --- [audit-log-service-test] [pool-2-thread-7] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 23505, SQLState: 23505
+2026-09-24T12:02:24.983+05:30 ERROR 17076 --- [audit-log-service-test] [pool-2-thread-7] o.h.engine.jdbc.spi.SqlExceptionHelper   : Unique index or primary key violation: &quot;PUBLIC.CONSTRAINT_INDEX_F ON PUBLIC.AUDIT_RECORDS(SEQUENCE_NUMBER NULLS FIRST) VALUES ( /* 869 */ CAST(2 AS BIGINT) )&quot;; SQL statement:
+insert into audit_records (actor_id,archived,archived_at,event_type,payload_json,previous_hash,record_hash,redactions_json,resource_id,resource_type,sequence_number,timestamp,id) values (?,?,?,?,?,?,?,?,?,?,?,?,default) [23505-224]
+2026-09-24T12:02:24.983+05:30  WARN 17076 --- [audit-log-service-test] [pool-2-thread-1] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 23505, SQLState: 23505
+2026-09-24T12:02:24.985+05:30 ERROR 17076 --- [audit-log-service-test] [pool-2-thread-1] o.h.engine.jdbc.spi.SqlExceptionHelper   : Unique index or primary key violation: &quot;PUBLIC.CONSTRAINT_INDEX_F ON PUBLIC.AUDIT_RECORDS(SEQUENCE_NUMBER NULLS FIRST) VALUES ( /* 876 */ CAST(3 AS BIGINT) )&quot;; SQL statement:
+insert into audit_records (actor_id,archived,archived_at,event_type,payload_json,previous_hash,record_hash,redactions_json,resource_id,resource_type,sequence_number,timestamp,id) values (?,?,?,?,?,?,?,?,?,?,?,?,default) [23505-224]
+2026-09-24T12:02:24.991+05:30  WARN 17076 --- [audit-log-service-test] [pool-2-thread-6] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 23505, SQLState: 23505
+2026-09-24T12:02:24.991+05:30 ERROR 17076 --- [audit-log-service-test] [pool-2-thread-6] o.h.engine.jdbc.spi.SqlExceptionHelper   : Unique index or primary key violation: &quot;PUBLIC.CONSTRAINT_INDEX_F ON PUBLIC.AUDIT_RECORDS(SEQUENCE_NUMBER NULLS FIRST) VALUES ( /* 876 */ CAST(3 AS BIGINT) )&quot;; SQL statement:
+insert into audit_records (actor_id,archived,archived_at,event_type,payload_json,previous_hash,record_hash,redactions_json,resource_id,resource_type,sequence_number,timestamp,id) values (?,?,?,?,?,?,?,?,?,?,?,?,default) [23505-224]
+2026-09-24T12:02:25.009+05:30  WARN 17076 --- [audit-log-service-test] [pool-2-thread-8] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 23505, SQLState: 23505
+2026-09-24T12:02:25.009+05:30 ERROR 17076 --- [audit-log-service-test] [pool-2-thread-8] o.h.engine.jdbc.spi.SqlExceptionHelper   : Unique index or primary key violation: &quot;PUBLIC.CONSTRAINT_INDEX_F ON PUBLIC.AUDIT_RECORDS(SEQUENCE_NUMBER NULLS FIRST) VALUES ( /* 882 */ CAST(5 AS BIGINT) )&quot;; SQL statement:
+insert into audit_records (actor_id,archived,archived_at,event_type,payload_json,previous_hash,record_hash,redactions_json,resource_id,resource_type,sequence_number,timestamp,id) values (?,?,?,?,?,?,?,?,?,?,?,?,default) [23505-224]
+2026-09-24T12:02:25.021+05:30  WARN 17076 --- [audit-log-service-test] [pool-2-thread-7] o.h.engine.jdbc.spi.SqlExceptionHelper   : SQL Error: 23505, SQLState: 23505
+2026-09-24T12:02:25.021+05:30 ERROR 17076 --- [audit-log-service-test] [pool-2-thread-7] o.h.engine.jdbc.spi.SqlExceptionHelper   : Unique index or primary key violation: &quot;PUBLIC.CONSTRAINT_INDEX_F ON PUBLIC.AUDIT_RECORDS(SEQUENCE_NUMBER NULLS FIRST) VALUES ( /* 884 */ CAST(6 AS BIGINT) )&quot;; SQL statement:
+insert into audit_records (actor_id,archived,archived_at,event_type,payload_json,previous_hash,record_hash,redactions_json,resource_id,resource_type,sequence_number,timestamp,id) values (?,?,?,?,?,?,?,?,?,?,?,?,default) [23505-224]
+</pre>
+<button class="clipboard-copy-btn" aria-label="Copy to clipboard" data-copy-element-id="root-0-test-stdout-testConcurrentIngestionProducesSequentialNonOverlappingIds()">Copy</button>
+</span>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<p>
+<div>
+<label class="hidden" id="label-for-line-wrapping-toggle" for="line-wrapping-toggle">Wrap lines
+<input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
+</label>
+</div>Generated by 
+<a href="https://www.gradle.org">Gradle 9.7.1</a> at 24-Sep-2026, 12:03:44 pm</p>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RedactionService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">audit-log-service</a> &gt; <a href="index.source.html" class="el_package">com.schwab.auditlog.service</a> &gt; <span class="el_source">RedactionService.java</span></div><h1>RedactionService.java</h1><pre class="source lang-java linenums">package com.schwab.auditlog.service;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.schwab.auditlog.crypto.HashChainEngine;
+import com.schwab.auditlog.crypto.HashChainEngine.RedactionEntry;
+import com.schwab.auditlog.dto.RedactFieldRequest;
+import com.schwab.auditlog.model.AuditRecord;
+import com.schwab.auditlog.repository.AuditRecordRepository;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.*;
+
+@Service
+public class RedactionService {
+
+    private final AuditRecordRepository repository;
+    private final HashChainEngine hashChainEngine;
+    private final ObjectMapper objectMapper;
+    private final String hmacSecret;
+
+    public RedactionService(AuditRecordRepository repository,
+                            HashChainEngine hashChainEngine,
+                            ObjectMapper objectMapper,
+<span class="fc" id="L27">                            @Value(&quot;${schwab.security.hmac.secret}&quot;) String hmacSecret) {</span>
+<span class="fc" id="L28">        this.repository = repository;</span>
+<span class="fc" id="L29">        this.hashChainEngine = hashChainEngine;</span>
+<span class="fc" id="L30">        this.objectMapper = objectMapper;</span>
+<span class="fc" id="L31">        this.hmacSecret = hmacSecret;</span>
+<span class="fc" id="L32">    }</span>
+
+    /**
+     * Performs structured redaction on sensitive payload fields without breaking cryptographic hash chain.
+     */
+    @Transactional
+    @SuppressWarnings(&quot;unchecked&quot;)
+    public AuditRecord redactPayloadField(Long recordId, RedactFieldRequest request) {
+<span class="fc" id="L40">        AuditRecord record = repository.findById(recordId)</span>
+<span class="pc" id="L41">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Audit record not found with ID: &quot; + recordId));</span>
+
+<span class="fc bfc" id="L43" title="All 2 branches covered.">        if (record.isArchived()) {</span>
+<span class="fc" id="L44">            throw new IllegalStateException(&quot;Cannot redact fields on an archived record.&quot;);</span>
+        }
+
+        try {
+<span class="fc" id="L48">            Map&lt;String, Object&gt; payloadMap = objectMapper.readValue(record.getPayloadJson(), new TypeReference&lt;&gt;() {});</span>
+<span class="fc" id="L49">            Map&lt;String, RedactionEntry&gt; redactionsMap = new HashMap&lt;&gt;();</span>
+
+<span class="pc bpc" id="L51" title="2 of 4 branches missed.">            if (record.getRedactionsJson() != null &amp;&amp; !record.getRedactionsJson().trim().isEmpty()) {</span>
+<span class="fc" id="L52">                redactionsMap = objectMapper.readValue(record.getRedactionsJson(), new TypeReference&lt;&gt;() {});</span>
+            }
+
+<span class="fc" id="L55">            String fieldPath = request.getFieldPath();</span>
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">            String salt = record.getPreviousHash() != null ? record.getPreviousHash() : hmacSecret;</span>
+
+<span class="fc" id="L58">            Object rawValue = extractAndRedactField(payloadMap, fieldPath, &quot;&quot;);</span>
+
+<span class="fc bfc" id="L60" title="All 2 branches covered.">            if (rawValue == null) {</span>
+<span class="fc" id="L61">                throw new IllegalArgumentException(&quot;Field path '&quot; + fieldPath + &quot;' not found in payload.&quot;);</span>
+            }
+
+            // Calculate salted field hash using record's salt
+<span class="fc" id="L65">            String fieldHash = hashChainEngine.hashFieldValue(rawValue, salt);</span>
+<span class="fc" id="L66">            redactionsMap.put(fieldPath, new RedactionEntry(salt, fieldHash));</span>
+
+<span class="fc" id="L68">            record.setPayloadJson(objectMapper.writeValueAsString(payloadMap));</span>
+<span class="fc" id="L69">            record.setRedactionsJson(objectMapper.writeValueAsString(redactionsMap));</span>
+
+            // Save redacted record
+<span class="fc" id="L72">            AuditRecord updatedRecord = repository.save(record);</span>
+
+            // Verify hash chain stability post-redaction
+<span class="fc" id="L75">            String recomputedHash = hashChainEngine.calculateRecordHash(updatedRecord);</span>
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">            if (!recomputedHash.equalsIgnoreCase(updatedRecord.getRecordHash())) {</span>
+<span class="nc" id="L77">                throw new IllegalStateException(&quot;CRITICAL BUG: Redaction altered calculated hash! Original: &quot; </span>
+<span class="nc" id="L78">                        + updatedRecord.getRecordHash() + &quot; Recomputed: &quot; + recomputedHash);</span>
+            }
+
+<span class="fc" id="L81">            return updatedRecord;</span>
+<span class="fc" id="L82">        } catch (Exception e) {</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">            if (e instanceof RuntimeException) {</span>
+<span class="fc" id="L84">                throw (RuntimeException) e;</span>
+            }
+<span class="nc" id="L86">            throw new RuntimeException(&quot;Failed to execute structured redaction: &quot; + e.getMessage(), e);</span>
+        }
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    private Object extractAndRedactField(Map&lt;String, Object&gt; map, String targetPath, String currentPath) {
+<span class="fc" id="L92">        String[] parts = targetPath.split(&quot;\\.&quot;, 2);</span>
+<span class="fc" id="L93">        String currentKey = parts[0];</span>
+
+<span class="fc bfc" id="L95" title="All 2 branches covered.">        if (!map.containsKey(currentKey)) {</span>
+<span class="fc" id="L96">            return null;</span>
+        }
+
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        if (parts.length == 1) {</span>
+<span class="fc" id="L100">            Object rawVal = map.get(currentKey);</span>
+<span class="fc" id="L101">            map.put(currentKey, &quot;[REDACTED]&quot;);</span>
+<span class="fc" id="L102">            return rawVal;</span>
+        } else {
+<span class="fc" id="L104">            Object subObj = map.get(currentKey);</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">            if (subObj instanceof Map) {</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">                return extractAndRedactField((Map&lt;String, Object&gt;) subObj, parts[1], currentPath.isEmpty() ? currentKey : currentPath + &quot;.&quot; + currentKey);</span>
+            }
+        }
+<span class="nc" id="L109">        return null;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

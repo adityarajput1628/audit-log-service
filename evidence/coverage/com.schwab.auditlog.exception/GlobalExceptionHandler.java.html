@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GlobalExceptionHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">audit-log-service</a> &gt; <a href="index.source.html" class="el_package">com.schwab.auditlog.exception</a> &gt; <span class="el_source">GlobalExceptionHandler.java</span></div><h1>GlobalExceptionHandler.java</h1><pre class="source lang-java linenums">package com.schwab.auditlog.exception;
+
+import jakarta.validation.ConstraintViolationException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+
+@RestControllerAdvice
+<span class="fc" id="L17">public class GlobalExceptionHandler {</span>
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public void handleAccessDenied(AccessDeniedException ex) throws AccessDeniedException {
+<span class="fc" id="L21">        throw ex;</span>
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public void handleAuthenticationException(AuthenticationException ex) throws AuthenticationException {
+<span class="fc" id="L26">        throw ex;</span>
+    }
+
+    @ExceptionHandler(AuditSecurityException.class)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleAuditSecurity(AuditSecurityException ex) {
+<span class="fc" id="L31">        Map&lt;String, Object&gt; error = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L32">        error.put(&quot;timestamp&quot;, Instant.now().toString());</span>
+<span class="fc" id="L33">        error.put(&quot;status&quot;, HttpStatus.FORBIDDEN.value());</span>
+<span class="fc" id="L34">        error.put(&quot;error&quot;, &quot;Forbidden&quot;);</span>
+<span class="fc" id="L35">        error.put(&quot;message&quot;, ex.getMessage());</span>
+<span class="fc" id="L36">        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);</span>
+    }
+
+    @ExceptionHandler(AuditSerializationException.class)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleAuditSerialization(AuditSerializationException ex) {
+<span class="fc" id="L41">        Map&lt;String, Object&gt; error = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L42">        error.put(&quot;timestamp&quot;, Instant.now().toString());</span>
+<span class="fc" id="L43">        error.put(&quot;status&quot;, HttpStatus.UNPROCESSABLE_ENTITY.value());</span>
+<span class="fc" id="L44">        error.put(&quot;error&quot;, &quot;Unprocessable Audit Payload&quot;);</span>
+<span class="fc" id="L45">        error.put(&quot;message&quot;, ex.getMessage());</span>
+<span class="fc" id="L46">        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);</span>
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleIllegalArgument(IllegalArgumentException ex) {
+<span class="fc" id="L51">        Map&lt;String, Object&gt; error = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L52">        error.put(&quot;timestamp&quot;, Instant.now().toString());</span>
+<span class="fc" id="L53">        error.put(&quot;status&quot;, HttpStatus.BAD_REQUEST.value());</span>
+<span class="fc" id="L54">        error.put(&quot;error&quot;, &quot;Bad Request&quot;);</span>
+<span class="fc" id="L55">        error.put(&quot;message&quot;, ex.getMessage());</span>
+<span class="fc" id="L56">        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);</span>
+    }
+
+    @ExceptionHandler(org.springframework.web.bind.MissingServletRequestParameterException.class)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleMissingParams(org.springframework.web.bind.MissingServletRequestParameterException ex) {
+<span class="fc" id="L61">        Map&lt;String, Object&gt; error = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L62">        error.put(&quot;timestamp&quot;, Instant.now().toString());</span>
+<span class="fc" id="L63">        error.put(&quot;status&quot;, HttpStatus.BAD_REQUEST.value());</span>
+<span class="fc" id="L64">        error.put(&quot;error&quot;, &quot;Missing Required Parameter&quot;);</span>
+<span class="fc" id="L65">        error.put(&quot;message&quot;, ex.getMessage());</span>
+<span class="fc" id="L66">        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);</span>
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleIllegalState(IllegalStateException ex) {
+<span class="fc" id="L71">        Map&lt;String, Object&gt; error = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L72">        error.put(&quot;timestamp&quot;, Instant.now().toString());</span>
+<span class="fc" id="L73">        error.put(&quot;status&quot;, HttpStatus.CONFLICT.value());</span>
+<span class="fc" id="L74">        error.put(&quot;error&quot;, &quot;Conflict / State Error&quot;);</span>
+<span class="fc" id="L75">        error.put(&quot;message&quot;, ex.getMessage());</span>
+<span class="fc" id="L76">        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);</span>
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleValidationExceptions(MethodArgumentNotValidException ex) {
+<span class="fc" id="L81">        Map&lt;String, Object&gt; error = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L82">        error.put(&quot;timestamp&quot;, Instant.now().toString());</span>
+<span class="fc" id="L83">        error.put(&quot;status&quot;, HttpStatus.BAD_REQUEST.value());</span>
+<span class="fc" id="L84">        error.put(&quot;error&quot;, &quot;Validation Error&quot;);</span>
+        
+<span class="fc" id="L86">        Map&lt;String, String&gt; fieldErrors = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L87">        ex.getBindingResult().getFieldErrors().forEach(f -&gt; fieldErrors.put(f.getField(), f.getDefaultMessage()));</span>
+<span class="fc" id="L88">        error.put(&quot;fieldErrors&quot;, fieldErrors);</span>
+
+<span class="fc" id="L90">        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);</span>
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleConstraintViolation(ConstraintViolationException ex) {
+<span class="fc" id="L95">        Map&lt;String, Object&gt; error = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L96">        error.put(&quot;timestamp&quot;, Instant.now().toString());</span>
+<span class="fc" id="L97">        error.put(&quot;status&quot;, HttpStatus.BAD_REQUEST.value());</span>
+<span class="fc" id="L98">        error.put(&quot;error&quot;, &quot;Constraint Violation&quot;);</span>
+<span class="fc" id="L99">        error.put(&quot;message&quot;, ex.getMessage());</span>
+<span class="fc" id="L100">        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);</span>
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; handleGeneralException(Exception ex) {
+<span class="fc" id="L105">        Map&lt;String, Object&gt; error = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L106">        error.put(&quot;timestamp&quot;, Instant.now().toString());</span>
+<span class="fc" id="L107">        error.put(&quot;status&quot;, HttpStatus.INTERNAL_SERVER_ERROR.value());</span>
+<span class="fc" id="L108">        error.put(&quot;error&quot;, &quot;Internal Server Error&quot;);</span>
+<span class="fc" id="L109">        error.put(&quot;message&quot;, &quot;An unexpected operational error occurred. Please contact system administrator.&quot;);</span>
+<span class="fc" id="L110">        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);</span>
+    }
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

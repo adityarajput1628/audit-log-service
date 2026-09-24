@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuditLogController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">audit-log-service</a> &gt; <a href="index.source.html" class="el_package">com.schwab.auditlog.controller</a> &gt; <span class="el_source">AuditLogController.java</span></div><h1>AuditLogController.java</h1><pre class="source lang-java linenums">package com.schwab.auditlog.controller;
+
+import com.schwab.auditlog.dto.*;
+import com.schwab.auditlog.exception.AuditSecurityException;
+import com.schwab.auditlog.model.AuditRecord;
+import com.schwab.auditlog.service.AuditLogService;
+import com.schwab.auditlog.service.ExportService;
+import com.schwab.auditlog.service.RedactionService;
+import com.schwab.auditlog.service.RetentionService;
+import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.Instant;
+import java.util.Map;
+
+@RestController
+@RequestMapping(&quot;/api/v1/audit&quot;)
+public class AuditLogController {
+
+    private final AuditLogService auditLogService;
+    private final RedactionService redactionService;
+    private final RetentionService retentionService;
+    private final ExportService exportService;
+
+    public AuditLogController(
+            AuditLogService auditLogService,
+            RedactionService redactionService,
+            RetentionService retentionService,
+            ExportService exportService
+<span class="fc" id="L36">    ) {</span>
+<span class="fc" id="L37">        this.auditLogService = auditLogService;</span>
+<span class="fc" id="L38">        this.redactionService = redactionService;</span>
+<span class="fc" id="L39">        this.retentionService = retentionService;</span>
+<span class="fc" id="L40">        this.exportService = exportService;</span>
+<span class="fc" id="L41">    }</span>
+
+    /**
+     * Write API: Append-only event ingestion.
+     */
+    @PostMapping(&quot;/events&quot;)
+    public ResponseEntity&lt;AuditRecord&gt; createEvent(@Valid @RequestBody CreateEventRequest request) {
+<span class="fc" id="L48">        AuditRecord created = auditLogService.createEvent(request);</span>
+<span class="fc" id="L49">        return ResponseEntity.status(HttpStatus.CREATED).body(created);</span>
+    }
+
+    /**
+     * Query API: Multi-criteria filtering with pagination.
+     * Enforces Resource &amp; Tenant level authorization (BOLA/IDOR protection).
+     */
+    @GetMapping(&quot;/events&quot;)
+    public ResponseEntity&lt;Page&lt;AuditRecord&gt;&gt; queryEvents(
+            @RequestParam(required = false) String actorId,
+            @RequestParam(required = false) String resourceType,
+            @RequestParam(required = false) String resourceId,
+            @RequestParam(required = false) String eventType,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to,
+            @RequestParam(required = false, defaultValue = &quot;false&quot;) Boolean includeArchived,
+            @RequestParam(defaultValue = &quot;0&quot;) int page,
+            @RequestParam(defaultValue = &quot;20&quot;) int size
+    ) {
+<span class="fc" id="L68">        String effectiveActorId = validateResourceAuthorization(actorId);</span>
+
+<span class="fc" id="L70">        Page&lt;AuditRecord&gt; result = auditLogService.queryEvents(</span>
+                effectiveActorId, resourceType, resourceId, eventType, from, to, includeArchived, page, size);
+<span class="fc" id="L72">        return ResponseEntity.ok(result);</span>
+    }
+
+    /**
+     * Chain Verification Endpoint: Walks full chain from genesis to HEAD.
+     */
+    @GetMapping(&quot;/verify&quot;)
+    public ResponseEntity&lt;VerificationResult&gt; verifyChain() {
+<span class="fc" id="L80">        VerificationResult result = auditLogService.verifyChain();</span>
+<span class="fc" id="L81">        return ResponseEntity.ok(result);</span>
+    }
+
+    /**
+     * Structured Redaction Endpoint: Redacts sensitive payload fields while preserving hash chain.
+     */
+    @PostMapping(&quot;/events/{id}/redact&quot;)
+    public ResponseEntity&lt;AuditRecord&gt; redactField(
+            @PathVariable Long id,
+            @Valid @RequestBody RedactFieldRequest request
+    ) {
+<span class="nc" id="L92">        AuditRecord redacted = redactionService.redactPayloadField(id, request);</span>
+<span class="nc" id="L93">        return ResponseEntity.ok(redacted);</span>
+    }
+
+    /**
+     * Retention Policy Endpoint: Archives records older than configurable window.
+     */
+    @PostMapping(&quot;/retention/apply&quot;)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; applyRetention(@Valid @RequestBody RetentionRequest request) {
+<span class="fc" id="L101">        Map&lt;String, Object&gt; result = retentionService.applyRetentionPolicy(request);</span>
+<span class="fc" id="L102">        return ResponseEntity.ok(result);</span>
+    }
+
+    /**
+     * Verifiable Bulk Export Endpoint: Self-contained JSON bundle with inclusion proof.
+     * Enforces BOLA / IDOR resource authorization.
+     */
+    @GetMapping(&quot;/export&quot;)
+    public ResponseEntity&lt;ExportBundle&gt; exportBundle(
+            @RequestParam(required = false) String resourceId,
+            @RequestParam(required = false) String actorId
+    ) {
+<span class="nc" id="L114">        String effectiveActorId = validateResourceAuthorization(actorId);</span>
+<span class="nc" id="L115">        ExportBundle bundle = exportService.generateExportBundle(resourceId, effectiveActorId);</span>
+<span class="nc" id="L116">        return ResponseEntity.ok(bundle);</span>
+    }
+
+    /**
+
+
+    /**
+     * Helper to validate resource/tenant ownership (BOLA/IDOR protection).
+     * If user is not ADMIN or AUDITOR, they can only query/export audit entries where actorId matches their username.
+     */
+    private String validateResourceAuthorization(String requestedActorId) {
+<span class="fc" id="L127">        Authentication auth = SecurityContextHolder.getContext().getAuthentication();</span>
+<span class="pc bpc" id="L128" title="2 of 4 branches missed.">        if (auth == null || !auth.isAuthenticated()) {</span>
+<span class="nc" id="L129">            return requestedActorId;</span>
+        }
+
+<span class="fc" id="L132">        boolean isAdminOrAuditor = auth.getAuthorities().stream().anyMatch(a -&gt;</span>
+<span class="fc bfc" id="L133" title="All 4 branches covered.">                &quot;ROLE_ADMIN&quot;.equals(a.getAuthority()) || &quot;ROLE_AUDITOR&quot;.equals(a.getAuthority()));</span>
+
+<span class="fc bfc" id="L135" title="All 2 branches covered.">        if (isAdminOrAuditor) {</span>
+<span class="fc" id="L136">            return requestedActorId;</span>
+        }
+
+<span class="fc" id="L139">        String currentUsername = auth.getName();</span>
+<span class="pc bpc" id="L140" title="3 of 6 branches missed.">        if (requestedActorId != null &amp;&amp; !requestedActorId.trim().isEmpty() &amp;&amp; !requestedActorId.equals(currentUsername)) {</span>
+<span class="fc" id="L141">            throw new AuditSecurityException(&quot;Access Denied: BOLA/IDOR protection policy prevents non-auditors from viewing audit records for actorId: &quot; + requestedActorId);</span>
+        }
+
+<span class="nc" id="L144">        return currentUsername;</span>
+    }
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

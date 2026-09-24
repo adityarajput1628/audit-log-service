@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ExportService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">audit-log-service</a> &gt; <a href="index.source.html" class="el_package">com.schwab.auditlog.service</a> &gt; <span class="el_source">ExportService.java</span></div><h1>ExportService.java</h1><pre class="source lang-java linenums">package com.schwab.auditlog.service;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.schwab.auditlog.crypto.HashChainEngine;
+import com.schwab.auditlog.dto.ExportBundle;
+import com.schwab.auditlog.dto.VerificationResult;
+import com.schwab.auditlog.model.AuditRecord;
+import com.schwab.auditlog.repository.AuditRecordRepository;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.util.*;
+
+@Service
+public class ExportService {
+
+    private final AuditRecordRepository repository;
+    private final HashChainEngine hashChainEngine;
+    private final AuditLogService auditLogService;
+    private final ObjectMapper objectMapper;
+
+    @Value(&quot;${schwab.security.hmac.secret}&quot;)
+    private String hmacSecret;
+
+<span class="fc" id="L29">    public ExportService(AuditRecordRepository repository, HashChainEngine hashChainEngine, AuditLogService auditLogService, ObjectMapper objectMapper) {</span>
+<span class="fc" id="L30">        this.repository = repository;</span>
+<span class="fc" id="L31">        this.hashChainEngine = hashChainEngine;</span>
+<span class="fc" id="L32">        this.auditLogService = auditLogService;</span>
+<span class="fc" id="L33">        this.objectMapper = objectMapper;</span>
+<span class="fc" id="L34">    }</span>
+
+    /**
+     * Generates a self-contained, verifiable export bundle for a resourceId or actorId.
+     */
+    @Transactional(readOnly = true)
+    public ExportBundle generateExportBundle(String resourceId, String actorId) {
+<span class="pc bpc" id="L41" title="3 of 8 branches missed.">        if ((resourceId == null || resourceId.trim().isEmpty()) &amp;&amp; (actorId == null || actorId.trim().isEmpty())) {</span>
+<span class="fc" id="L42">            throw new IllegalArgumentException(&quot;Must specify either resourceId or actorId for export.&quot;);</span>
+        }
+
+<span class="fc" id="L45">        Specification&lt;AuditRecord&gt; spec = (root, query, cb) -&gt; {</span>
+<span class="pc bpc" id="L46" title="2 of 4 branches missed.">            if (resourceId != null &amp;&amp; !resourceId.trim().isEmpty()) {</span>
+<span class="fc" id="L47">                return cb.equal(root.get(&quot;resourceId&quot;), resourceId);</span>
+            } else {
+<span class="nc" id="L49">                return cb.equal(root.get(&quot;actorId&quot;), actorId);</span>
+            }
+        };
+
+<span class="fc" id="L53">        List&lt;AuditRecord&gt; records = repository.findAll(spec);</span>
+<span class="fc" id="L54">        records.sort(Comparator.comparing(AuditRecord::getSequenceNumber));</span>
+
+<span class="fc" id="L56">        VerificationResult verification = auditLogService.verifyChain();</span>
+<span class="pc bpc" id="L57" title="1 of 2 branches missed.">        if (!verification.isIntact()) {</span>
+<span class="nc" id="L58">            throw new IllegalStateException(&quot;Export blocked: System audit chain is tampered or corrupted.&quot;);</span>
+        }
+
+<span class="fc" id="L61">        List&lt;Map&lt;String, Object&gt;&gt; recordMaps = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L62">        StringBuilder bundleHashBuffer = new StringBuilder();</span>
+
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        for (AuditRecord r : records) {</span>
+<span class="fc" id="L65">            Map&lt;String, Object&gt; map = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L66">            map.put(&quot;sequenceNumber&quot;, r.getSequenceNumber());</span>
+<span class="fc" id="L67">            map.put(&quot;eventType&quot;, r.getEventType());</span>
+<span class="fc" id="L68">            map.put(&quot;actorId&quot;, r.getActorId());</span>
+<span class="fc" id="L69">            map.put(&quot;resourceType&quot;, r.getResourceType());</span>
+<span class="fc" id="L70">            map.put(&quot;resourceId&quot;, r.getResourceId());</span>
+            try {
+<span class="fc" id="L72">                map.put(&quot;payload&quot;, objectMapper.readValue(r.getPayloadJson(), new TypeReference&lt;Map&lt;String, Object&gt;&gt;() {}));</span>
+<span class="nc" id="L73">            } catch (Exception e) {</span>
+<span class="nc" id="L74">                map.put(&quot;payload&quot;, r.getPayloadJson());</span>
+<span class="fc" id="L75">            }</span>
+<span class="fc" id="L76">            map.put(&quot;timestamp&quot;, r.getTimestamp().toString());</span>
+<span class="fc" id="L77">            map.put(&quot;previousHash&quot;, r.getPreviousHash());</span>
+<span class="fc" id="L78">            map.put(&quot;recordHash&quot;, r.getRecordHash());</span>
+<span class="fc" id="L79">            map.put(&quot;archived&quot;, r.isArchived());</span>
+
+<span class="fc" id="L81">            recordMaps.add(map);</span>
+<span class="fc" id="L82">            bundleHashBuffer.append(r.getRecordHash());</span>
+<span class="fc" id="L83">        }</span>
+
+<span class="fc" id="L85">        String exportDigest = &quot;HMAC-SHA256:&quot; + hashChainEngine.hmacSha256(bundleHashBuffer.toString(), hmacSecret);</span>
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">        String genesisHash = records.isEmpty() ? AuditRecord.GENESIS_HASH : records.get(0).getPreviousHash();</span>
+<span class="pc bpc" id="L87" title="1 of 2 branches missed.">        String latestHash = records.isEmpty() ? AuditRecord.GENESIS_HASH : records.get(records.size() - 1).getRecordHash();</span>
+
+<span class="fc" id="L89">        return ExportBundle.builder()</span>
+<span class="fc" id="L90">                .exportId(&quot;EXP-&quot; + UUID.randomUUID().toString().substring(0, 8).toUpperCase())</span>
+<span class="fc" id="L91">                .exportedAt(Instant.now())</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">                .filterType(resourceId != null ? &quot;resourceId&quot; : &quot;actorId&quot;)</span>
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">                .filterValue(resourceId != null ? resourceId : actorId)</span>
+<span class="fc" id="L94">                .recordCount(records.size())</span>
+<span class="fc" id="L95">                .records(recordMaps)</span>
+<span class="fc" id="L96">                .exportDigest(exportDigest)</span>
+<span class="fc" id="L97">                .chainGenesisHash(genesisHash)</span>
+<span class="fc" id="L98">                .chainLatestHash(latestHash)</span>
+<span class="fc" id="L99">                .verificationStatus(&quot;VERIFIED_INTACT&quot;)</span>
+<span class="fc" id="L100">                .build();</span>
+    }
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

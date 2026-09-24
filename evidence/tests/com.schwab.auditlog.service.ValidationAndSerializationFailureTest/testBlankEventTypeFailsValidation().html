@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta http-equiv="x-ua-compatible" content="IE=edge"/>
+<title>Test results - testBlankEventTypeFailsValidation()</title>
+<link href="../css/base-style.css" rel="stylesheet" type="text/css"/>
+<link href="../css/style.css" rel="stylesheet" type="text/css"/>
+<script src="../js/report.js" type="text/javascript"></script>
+</head>
+<body>
+<div id="content">
+<div class="breadcrumbs">
+<a class="breadcrumb" href="../index.html">all</a> &gt; 
+<a class="breadcrumb" href="index.html">com.schwab.auditlog.service.ValidationAndSerializationFailureTest</a> &gt; 
+<span class="breadcrumb">testBlankEventTypeFailsValidation()</span>
+</div>
+<div class="tab-container">
+<ul class="tabLinks">
+<li>
+<a class="successGroup" href="#">Gradle Test Run :test</a>
+</li>
+</ul>
+<div class="tab">
+<h2>Gradle Test Run :test</h2>
+<h1>VAL-01: Invalid event request with blank eventType fails validation (400 Bad Request)</h1>
+<div class="tab-container">
+<ul class="tabLinks">
+<li>
+<a class="" href="#">summary</a>
+</li>
+<li>
+<a class="" href="#">standard output</a>
+</li>
+</ul>
+<div class="tab">
+<h2>summary</h2>
+<div>
+<div class="summary">
+<table>
+<tr>
+<td>
+<div class="summaryGroup">
+<table>
+<tr>
+<td>
+<div class="infoBox">
+<div class="counter">1</div>
+<p>tests</p>
+</div>
+</td>
+<td>
+<div class="infoBox">
+<div class="counter">0</div>
+<p>failures</p>
+</div>
+</td>
+<td>
+<div class="infoBox">
+<div class="counter">0</div>
+<p>skipped</p>
+</div>
+</td>
+<td>
+<div class="infoBox duration">
+<div class="counter">1.134s</div>
+<p>duration</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</td>
+<td>
+<div class="infoBox success successRate">
+<div class="percent">100%</div>
+<p>successful</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="tab">
+<h2>standard output</h2>
+<span class="code">
+<pre id="root-0-test-stdout-testBlankEventTypeFailsValidation()">2026-09-24T12:03:42.154+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-09-24T12:03:42.155+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-55 - Shutdown initiated...
+2026-09-24T12:03:42.156+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-55 - Shutdown completed.
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.0)
+
+2026-09-24T12:03:42.171+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] .s.ValidationAndSerializationFailureTest : Starting ValidationAndSerializationFailureTest using Java 17.0.2 with PID 17076 (started by SUPREM HAJARE in C:\Users\SUPREM HAJARE\Documents\adityaProject)
+2026-09-24T12:03:42.171+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] .s.ValidationAndSerializationFailureTest : The following 1 profile is active: &quot;test&quot;
+2026-09-24T12:03:42.348+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-09-24T12:03:42.355+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 7 ms. Found 1 JPA repository interface.
+2026-09-24T12:03:42.420+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-09-24T12:03:42.425+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-09-24T12:03:42.432+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-09-24T12:03:42.433+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-56 - Starting...
+2026-09-24T12:03:42.434+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] com.zaxxer.hikari.pool.HikariPool        : HikariPool-56 - Added connection conn550: url=jdbc:h2:mem:testdb user=SA
+2026-09-24T12:03:42.434+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-56 - Start completed.
+2026-09-24T12:03:42.434+05:30  WARN 17076 --- [audit-log-service-test] [    Test worker] org.hibernate.orm.deprecation            : HHH90000025: H2Dialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-09-24T12:03:42.463+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-09-24T12:03:42.466+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-09-24T12:03:42.589+05:30  WARN 17076 --- [audit-log-service-test] [    Test worker] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-09-24T12:03:42.810+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name userDetailsService
+2026-09-24T12:03:42.849+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.s.b.a.w.s.WelcomePageHandlerMapping    : Adding welcome page: class path resource [static/index.html]
+2026-09-24T12:03:42.940+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 1 endpoint beneath base path '/actuator'
+2026-09-24T12:03:42.959+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with [org.springframework.security.web.session.DisableEncodeUrlFilter@6773b79, org.springframework.security.web.context.request.async.WebAsyncManagerIntegrationFilter@55ffc5af, org.springframework.security.web.context.SecurityContextHolderFilter@a4b5546, org.springframework.security.web.header.HeaderWriterFilter@7dcbdf06, org.springframework.web.filter.CorsFilter@2d2f257c, org.springframework.security.web.authentication.logout.LogoutFilter@7114528d, org.springframework.security.web.authentication.www.BasicAuthenticationFilter@41325d2d, org.springframework.security.web.savedrequest.RequestCacheAwareFilter@1e6ed37f, org.springframework.security.web.servletapi.SecurityContextHolderAwareRequestFilter@132469db, org.springframework.security.web.authentication.AnonymousAuthenticationFilter@23de36fe, org.springframework.security.web.session.SessionManagementFilter@4715545d, org.springframework.security.web.access.ExceptionTranslationFilter@1eb92a0f, org.springframework.security.web.access.intercept.AuthorizationFilter@2e5fd00d]
+2026-09-24T12:03:43.111+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-09-24T12:03:43.111+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-09-24T12:03:43.112+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 1 ms
+2026-09-24T12:03:43.125+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] .s.ValidationAndSerializationFailureTest : Started ValidationAndSerializationFailureTest in 0.968 seconds (process running for 99.246)
+</pre>
+<button class="clipboard-copy-btn" aria-label="Copy to clipboard" data-copy-element-id="root-0-test-stdout-testBlankEventTypeFailsValidation()">Copy</button>
+</span>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<p>
+<div>
+<label class="hidden" id="label-for-line-wrapping-toggle" for="line-wrapping-toggle">Wrap lines
+<input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
+</label>
+</div>Generated by 
+<a href="https://www.gradle.org">Gradle 9.7.1</a> at 24-Sep-2026, 12:03:44 pm</p>
+</div>
+</div>
+</body>
+</html>

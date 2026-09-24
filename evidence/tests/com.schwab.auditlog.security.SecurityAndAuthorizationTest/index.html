@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta http-equiv="x-ua-compatible" content="IE=edge"/>
+<title>Test results - com.schwab.auditlog.security.SecurityAndAuthorizationTest</title>
+<link href="../css/base-style.css" rel="stylesheet" type="text/css"/>
+<link href="../css/style.css" rel="stylesheet" type="text/css"/>
+<script src="../js/report.js" type="text/javascript"></script>
+</head>
+<body>
+<div id="content">
+<div class="breadcrumbs">
+<a class="breadcrumb" href="../index.html">all</a> &gt; 
+<span class="breadcrumb">com.schwab.auditlog.security.SecurityAndAuthorizationTest</span>
+</div>
+<div class="tab-container">
+<ul class="tabLinks">
+<li>
+<a class="successGroup" href="#">Gradle Test Run :test</a>
+</li>
+</ul>
+<div class="tab">
+<h2>Gradle Test Run :test</h2>
+<h1>SecurityAndAuthorizationTest</h1>
+<div class="tab-container">
+<ul class="tabLinks">
+<li>
+<a class="" href="#">summary</a>
+</li>
+<li>
+<a class="" href="#">standard output</a>
+</li>
+</ul>
+<div class="tab">
+<h2>summary</h2>
+<div>
+<div class="summary">
+<table>
+<tr>
+<td>
+<div class="summaryGroup">
+<table>
+<tr>
+<td>
+<div class="infoBox">
+<div class="counter">5</div>
+<p>tests</p>
+</div>
+</td>
+<td>
+<div class="infoBox">
+<div class="counter">0</div>
+<p>failures</p>
+</div>
+</td>
+<td>
+<div class="infoBox">
+<div class="counter">0</div>
+<p>skipped</p>
+</div>
+</td>
+<td>
+<div class="infoBox duration">
+<div class="counter">8.024s</div>
+<p>duration</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</td>
+<td>
+<div class="infoBox success successRate">
+<div class="percent">100%</div>
+<p>successful</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<table class="test-results sortable">
+<thead>
+<tr>
+<th>Child</th>
+<th>Name</th>
+<th data-sort-default="desc">Tests</th>
+<th data-sort-default="desc">Failures</th>
+<th data-sort-default="desc">Skipped</th>
+<th data-sort-default="desc">Duration</th>
+<th>Success rate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="success">
+<a href="testAuditorCanAccessAnyActorEvents().html">BOLA / IDOR protection: AUDITOR and ADMIN can access events for any actorId</a>
+</td>
+<td class="path">testAuditorCanAccessAnyActorEvents()</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td data-sort-value="1749">1.749s</td>
+<td class="success" data-sort-value="100">100%</td>
+</tr>
+<tr>
+<td class="success">
+<a href="testAuthorizedUserAccess().html">Authorized users can access endpoints according to assigned RBAC roles</a>
+</td>
+<td class="path">testAuthorizedUserAccess()</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td data-sort-value="1858">1.858s</td>
+<td class="success" data-sort-value="100">100%</td>
+</tr>
+<tr>
+<td class="success">
+<a href="testBolaResourceAuthorization_nonAuditorCannotAccessOtherActorEvents().html">BOLA / IDOR protection: Non-auditors cannot query events belonging to other actors</a>
+</td>
+<td class="path">testBolaResourceAuthorization_nonAuditorCannotAccessOtherActorEvents()</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td data-sort-value="1555">1.555s</td>
+<td class="success" data-sort-value="100">100%</td>
+</tr>
+<tr>
+<td class="success">
+<a href="testIngestRoleCannotAccessAdminEndpoints().html">INGEST user cannot call admin endpoints (403 Forbidden)</a>
+</td>
+<td class="path">testIngestRoleCannotAccessAdminEndpoints()</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td data-sort-value="1475">1.475s</td>
+<td class="success" data-sort-value="100">100%</td>
+</tr>
+<tr>
+<td class="success">
+<a href="testUnauthenticatedAccessReturns401().html">Unauthenticated requests to protected endpoints return 401 Unauthorized</a>
+</td>
+<td class="path">testUnauthenticatedAccessReturns401()</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+<td data-sort-value="1367">1.367s</td>
+<td class="success" data-sort-value="100">100%</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="tab">
+<h2>standard output</h2>
+<span class="code">
+<pre id="root-0-test-stdout-com.schwab.auditlog.security.SecurityAndAuthorizationTest">2026-09-24T12:02:48.396+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.schwab.auditlog.security.SecurityAndAuthorizationTest]: SecurityAndAuthorizationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-09-24T12:02:48.400+05:30  INFO 17076 --- [audit-log-service-test] [    Test worker] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.schwab.auditlog.AuditLogServiceApplication for test class com.schwab.auditlog.security.SecurityAndAuthorizationTest
+</pre>
+<button class="clipboard-copy-btn" aria-label="Copy to clipboard" data-copy-element-id="root-0-test-stdout-com.schwab.auditlog.security.SecurityAndAuthorizationTest">Copy</button>
+</span>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<p>
+<div>
+<label class="hidden" id="label-for-line-wrapping-toggle" for="line-wrapping-toggle">Wrap lines
+<input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
+</label>
+</div>Generated by 
+<a href="https://www.gradle.org">Gradle 9.7.1</a> at 24-Sep-2026, 12:03:44 pm</p>
+</div>
+</div>
+</body>
+</html>

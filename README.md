@@ -14,7 +14,7 @@ The system guarantees:
 - **Archived Record Integrity Verification**: Cryptographically verifies **ALL** records (active AND archived tombstones) in `verifyChain()`, catching direct database tampering on archived tombstones or metadata.
 - **Zero-Knowledge Field Redaction (Scenario B)**: Masks sensitive PII (account numbers, SSNs) to `"[REDACTED]"` while preserving 100% cryptographic hash chain validity using salted field digests.
 - **Policy-Based Retention (Scenario B)**: Soft-deletes aged records using verifiable tombstones without producing false-positive chain breaks.
-- **Keyed HMAC Proof Bundles & Reports**: Issues non-repudiable HMAC-SHA256 keyed signatures (`HMAC-SHA256:<sig>` and `PROOF-HMAC-SHA256:<sig>`) for bulk exports and SEC regulatory access reports.
+- **Keyed HMAC Proof Bundles & Reports**: Issues cryptographic HMAC-SHA256 keyed proof signatures (`HMAC-SHA256:<sig>` and `PROOF-HMAC-SHA256:<sig>`) for bulk exports and SEC regulatory access reports.
 - **Multi-Instance DB Concurrency**: Database-level pessimistic locking (`@Lock(LockModeType.PESSIMISTIC_WRITE)`) and atomic synchronization guaranteeing non-overlapping sequence assignment under multi-threaded parallel load.
 - **Ambiguous Requirement Clarification (Scenario C)**: Translates the under-specified product mandate *"Regulators need to be able to audit access to client account data"* into a concrete, cryptographically-certified compliance reporting engine.
 - **Live Direct-DB Tamper Simulator & Embedded Visualizer**: Interactive control portal (`http://localhost:8080`) with a 1-click database corruption simulator to demonstrate verification detection in real time.
@@ -23,11 +23,11 @@ The system guarantees:
 
 ## Security Credentials & Roles
 
-| Role | Username | Password | Permitted API Operations |
+| Role | Username | Password Source | Permitted API Operations |
 | :--- | :--- | :--- | :--- |
-| **`ROLE_INGEST`** | `ingest` | `ingest123` | Ingest new events (`POST /api/v1/audit/events`), query events (`GET /api/v1/audit/events`) |
-| **`ROLE_AUDITOR`** | `auditor` | `auditor123` | Query events, run verification scans (`GET /api/v1/audit/verify`), bulk exports, compliance reports |
-| **`ROLE_ADMIN`** | `admin` | `admin123` | All endpoints including Redaction (`POST /events/{id}/redact`), Retention (`POST /retention/apply`), Tamper Simulator |
+| **`ROLE_INGEST`** | `ingest` | Configured via `${AUDIT_INGEST_PASS}` | Ingest new events (`POST /api/v1/audit/events`), query events (`GET /api/v1/audit/events`) |
+| **`ROLE_AUDITOR`** | `auditor` | Configured via `${AUDIT_AUDITOR_PASS}` | Query events, run verification scans (`GET /api/v1/audit/verify`), bulk exports, compliance reports |
+| **`ROLE_ADMIN`** | `admin` | Configured via `${AUDIT_ADMIN_PASS}` | All endpoints including Redaction (`POST /events/{id}/redact`), Retention (`POST /retention/apply`), Tamper Simulator |
 
 ---
 
