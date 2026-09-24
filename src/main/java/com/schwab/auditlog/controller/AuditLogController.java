@@ -117,18 +117,7 @@ public class AuditLogController {
     }
 
     /**
-     * Live Tamper Simulator Endpoint for Demonstrations & Validation.
-     * Mutates raw record in DB without recalculating recordHash to test detection.
-     */
-    @PostMapping("/tamper-test")
-    public ResponseEntity<AuditRecord> simulateTampering(
-            @RequestParam Long recordId,
-            @RequestParam(required = false) String tamperedPayload,
-            @RequestParam(required = false) String tamperedActorId
-    ) {
-        AuditRecord tampered = auditLogService.simulateTampering(recordId, tamperedPayload, tamperedActorId);
-        return ResponseEntity.ok(tampered);
-    }
+
 
     /**
      * Helper to validate resource/tenant ownership (BOLA/IDOR protection).

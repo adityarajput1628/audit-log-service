@@ -49,22 +49,22 @@ public class SecurityConfig {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Value("${schwab.security.users.ingest.username:ingest}")
+    @Value("${schwab.security.users.ingest.username}")
     private String ingestUsername;
 
-    @Value("${schwab.security.users.ingest.password:ingest123}")
+    @Value("${schwab.security.users.ingest.password}")
     private String ingestPassword;
 
-    @Value("${schwab.security.users.auditor.username:auditor}")
+    @Value("${schwab.security.users.auditor.username}")
     private String auditorUsername;
 
-    @Value("${schwab.security.users.auditor.password:auditor123}")
+    @Value("${schwab.security.users.auditor.password}")
     private String auditorPassword;
 
-    @Value("${schwab.security.users.admin.username:admin}")
+    @Value("${schwab.security.users.admin.username}")
     private String adminUsername;
 
-    @Value("${schwab.security.users.admin.password:admin123}")
+    @Value("${schwab.security.users.admin.password}")
     private String adminPassword;
 
     @Value("${schwab.cors.allowed-origins:http://localhost:8080,http://127.0.0.1:8080}")
