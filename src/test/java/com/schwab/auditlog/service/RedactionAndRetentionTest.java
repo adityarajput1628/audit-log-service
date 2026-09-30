@@ -108,7 +108,7 @@ class RedactionAndRetentionTest {
         // Check archived record tombstone state
         AuditRecord reloadedOld = repository.findById(oldRecord.getId()).orElseThrow();
         assertThat(reloadedOld.isArchived()).isTrue();
-        assertThat(reloadedOld.getPayloadJson()).contains("_archived");
+        assertThat(reloadedOld.getPayloadJson()).contains("period");
 
         // Chain verification must be 100% INTACT without false positive break
         VerificationResult verification = auditLogService.verifyChain();

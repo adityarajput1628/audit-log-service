@@ -3,6 +3,7 @@ package com.schwab.auditlog.controller;
 import com.schwab.auditlog.dto.*;
 import com.schwab.auditlog.exception.AuditSecurityException;
 import com.schwab.auditlog.model.AuditRecord;
+import com.schwab.auditlog.model.ChainCheckpoint;
 import com.schwab.auditlog.service.AuditLogService;
 import com.schwab.auditlog.service.ExportService;
 import com.schwab.auditlog.service.RedactionService;
@@ -17,6 +18,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @RestController
@@ -41,11 +43,30 @@ public class AuditLogController {
     }
 
     /**
-     * Write API: Append-only event ingestion.
+     * Write API: Append-only event ingestion with optional Idempotency-Key header.
      */
     @PostMapping("/events")
-    public ResponseEntity<AuditRecord> createEvent(@Valid @RequestBody CreateEventRequest request) {
-        AuditRecord created = auditLogService.createEvent(request);
+    public ResponseEntity<AuditRecord> createEvent(
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            @Valid @RequestBody CreateEventRequest request
+    ) {
+        CreateEventRequest apiRequest = request;
+        if (request.getTimestamp() != null) {
+            Map<String, Object> payload = new LinkedHashMap<>();
+            if (request.getPayload() != null) {
+                payload.putAll(request.getPayload());
+            }
+            payload.put("_occurredAt", request.getTimestamp().toString());
+            apiRequest = CreateEventRequest.builder()
+                    .eventType(request.getEventType())
+                    .actorId(request.getActorId())
+                    .resourceType(request.getResourceType())
+                    .resourceId(request.getResourceId())
+                    .payload(payload)
+                    .timestamp(null)
+                    .build();
+        }
+        AuditRecord created = auditLogService.createEvent(apiRequest, idempotencyKey);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
@@ -78,6 +99,24 @@ public class AuditLogController {
     @GetMapping("/verify")
     public ResponseEntity<VerificationResult> verifyChain() {
         VerificationResult result = auditLogService.verifyChain();
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * External Checkpoint Creation Endpoint (Phase 2).
+     */
+    @PostMapping("/checkpoint")
+    public ResponseEntity<ChainCheckpoint> createCheckpoint() {
+        ChainCheckpoint checkpoint = auditLogService.createCheckpoint();
+        return ResponseEntity.status(HttpStatus.CREATED).body(checkpoint);
+    }
+
+    /**
+     * External Checkpoint Verification Endpoint (Phase 2).
+     */
+    @GetMapping("/checkpoint/{checkpointId}/verify")
+    public ResponseEntity<VerificationResult> verifyCheckpoint(@PathVariable String checkpointId) {
+        VerificationResult result = auditLogService.verifyCheckpoint(checkpointId);
         return ResponseEntity.ok(result);
     }
 
@@ -117,9 +156,6 @@ public class AuditLogController {
     }
 
     /**
-
-
-    /**
      * Helper to validate resource/tenant ownership (BOLA/IDOR protection).
      * If user is not ADMIN or AUDITOR, they can only query/export audit entries where actorId matches their username.
      */
@@ -144,4 +180,3 @@ public class AuditLogController {
         return currentUsername;
     }
 }
-

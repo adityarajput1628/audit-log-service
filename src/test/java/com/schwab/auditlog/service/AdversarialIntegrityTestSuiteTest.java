@@ -75,7 +75,7 @@ public class AdversarialIntegrityTestSuiteTest {
         // Archive the record
         retentionService.applyRetentionPolicy(new RetentionRequest(-1, false));
 
-        AuditRecord archivedRecord = repository.findById(record.getSequenceNumber()).orElseThrow();
+        AuditRecord archivedRecord = repository.findById(record.getId()).orElseThrow();
         assertTrue(archivedRecord.isArchived(), "Record must be archived");
 
         VerificationResult beforeTamper = auditLogService.verifyChain();
@@ -153,7 +153,7 @@ public class AdversarialIntegrityTestSuiteTest {
         // Archive record
         retentionService.applyRetentionPolicy(new RetentionRequest(-1, false));
 
-        AuditRecord archived = repository.findById(r1.getSequenceNumber()).orElseThrow();
+        AuditRecord archived = repository.findById(r1.getId()).orElseThrow();
 
         // Adversary attempts to forge payload AND insert fake _ARCHIVED_PAYLOAD redaction entry attempting a bypass
         archived.setPayloadJson("{\"key\":\"tampered_val\"}");

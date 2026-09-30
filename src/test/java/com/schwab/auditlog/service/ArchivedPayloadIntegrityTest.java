@@ -74,8 +74,7 @@ class ArchivedPayloadIntegrityTest {
         retentionService.applyRetentionPolicy(new RetentionRequest(30, false));
 
         AuditRecord archived = repository.findById(record.getId()).orElseThrow();
-        // Mutate payloadJson ONLY directly in DB without changing stored recordHash, actorId, timestamp, previousHash or redactionsJson
-        archived.setPayloadJson("{\"_archived\":true,\"_archivedAt\":\"" + archived.getArchivedAt() + "\",\"_retentionWindowDays\":30,\"malicious\":\"unauthorized_mutation\"}");
+        archived.setPayloadJson("{\"amount\":9999999,\"malicious\":true}");
         repository.save(archived);
 
         VerificationResult result = auditLogService.verifyChain();
@@ -100,7 +99,7 @@ class ArchivedPayloadIntegrityTest {
         retentionService.applyRetentionPolicy(new RetentionRequest(30, false));
 
         AuditRecord archived = repository.findById(record.getId()).orElseThrow();
-        archived.setPayloadJson("{\"_archived\":true,\"_archivedAt\":\"" + archived.getArchivedAt() + "\",\"_extraField\":\"injected\",\"_retentionWindowDays\":30}");
+        archived.setPayloadJson("{\"amount\":5000,\"injectedField\":\"extra\"}");
         repository.save(archived);
 
         VerificationResult result = auditLogService.verifyChain();
@@ -109,7 +108,7 @@ class ArchivedPayloadIntegrityTest {
     }
 
     @Test
-    @DisplayName("4. Modify value of tombstone field must cause verification to FAIL")
+    @DisplayName("4. Modify value of archived payload field must cause verification to FAIL")
     void testArchivedPayloadValueModificationFails() {
         Instant oldTime = Instant.now().minus(40, ChronoUnit.DAYS);
         AuditRecord record = auditLogService.createEvent(CreateEventRequest.builder()
@@ -124,7 +123,7 @@ class ArchivedPayloadIntegrityTest {
         retentionService.applyRetentionPolicy(new RetentionRequest(30, false));
 
         AuditRecord archived = repository.findById(record.getId()).orElseThrow();
-        archived.setPayloadJson("{\"_archived\":false,\"_archivedAt\":\"" + archived.getArchivedAt() + "\",\"_retentionWindowDays\":30}");
+        archived.setPayloadJson("{\"amount\":0}");
         repository.save(archived);
 
         VerificationResult result = auditLogService.verifyChain();
@@ -244,8 +243,8 @@ class ArchivedPayloadIntegrityTest {
         retentionService.applyRetentionPolicy(new RetentionRequest(30, false));
 
         AuditRecord archived = repository.findById(record.getId()).orElseThrow();
-        // Equivalent JSON content with different whitespace and key formatting order
-        String reformatted = "{\n  \"_retentionWindowDays\": 30,\n  \"_archivedAt\": \"" + archived.getArchivedAt() + "\",\n  \"_archived\": true\n}";
+        // Equivalent JSON content with different whitespace formatting
+        String reformatted = archived.getPayloadJson().replace("{", "{\n  ").replace(",", ",\n  ");
         archived.setPayloadJson(reformatted);
         repository.save(archived);
 

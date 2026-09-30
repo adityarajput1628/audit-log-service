@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
@@ -35,7 +36,7 @@ public class HashChainEngine {
      */
     public String calculateRecordHash(AuditRecord record) {
         String payloadHash = calculatePayloadHash(record.getPayloadJson(), record.getRedactionsJson(), record.getPreviousHash());
-        String timestampIso = record.getTimestamp().truncatedTo(ChronoUnit.MILLIS).toString();
+        String timestampIso = Instant.ofEpochMilli(record.getTimestamp().toEpochMilli()).toString();
         
         String canonicalString = String.join("|",
                 String.valueOf(record.getSequenceNumber()),

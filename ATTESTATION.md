@@ -5,8 +5,7 @@
 - **GitHub Repository**: https://github.com/adityarajput1628/audit-log-service
 - **Repository Branch**: `master`
 - **Assignment Title**: Charles Schwab Audit Log Service – Production System Evaluation
-- **Base Commit SHA**: `16f0f5676bfed3c76fa0180231282fa07617f2f5` (uncommitted working tree remediation changes ready for staging)
-- **Date Verified**: 2026-09-24
+- **Date Verified**: 2026-09-30
 
 > I, Aditya Rajput, attest that this submission is my own individual work, completed on my own machine and accounts, and that it honestly reflects my development process, architectural choices, and transparent use of AI tools.
 
@@ -33,14 +32,15 @@
 | **SEC-09** | Stateless CSRF Policy & CORS Enforcement | [SecurityConfig.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/config/SecurityConfig.java) | `SecurityAndAuthorizationComprehensiveTest.testCorsPreflightAllowedOrigins` | **PASS** |
 | **SEC-10** | Production H2 Console Isolation Guardrail | [application-prod.properties](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/resources/application-prod.properties) | `SecurityAndAuthorizationComprehensiveTest` | **PASS** |
 | **EXC-01** | Structured Global Exception Handling | [GlobalExceptionHandler.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/main/java/com/schwab/auditlog/exception/GlobalExceptionHandler.java) | `DetailedCoverageExpansionTest`, `ValidationAndSerializationFailureTest` | **PASS** |
-| **TEST-06** | Executable JaCoCo Coverage Enforcement | [build.gradle](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/build.gradle) (`check.dependsOn jacocoTestCoverageVerification`) | `./gradlew clean check` (88.89% Line, 69.68% Branch Coverage) | **PASS** |
+| **TEST-06** | Executable JaCoCo Coverage Enforcement | [build.gradle](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/build.gradle) (`check.dependsOn jacocoTestCoverageVerification`) | `./gradlew clean check` (88.59% Line, 69.33% Branch Coverage) | **PASS** |
 | **TEST-15** | Adversarial Integrity Test Suite | [AdversarialIntegrityTestSuiteTest.java](file:///c:/Users/SUPREM%20HAJARE/Documents/adityaProject/src/test/java/com/schwab/auditlog/service/AdversarialIntegrityTestSuiteTest.java) | 5 explicit tamper mutation tests (Cases A-E) | **PASS** |
 
 ---
 
 ## Verification Evidence Summary
-- **Total Test Cases**: **62** (61 Passed, 0 Failed, 0 Errors, 1 Skipped)
-- **JaCoCo Line Coverage**: **88.89%** (648/729 lines covered, Threshold: >= 80%)
-- **JaCoCo Branch Coverage**: **69.68%** (131/188 branches covered, Threshold: >= 60%)
+- **Total Test Cases**: **79** (78 Passed, 0 Failed, 0 Errors, 1 Skipped across 25 Test Classes)
+- **JaCoCo Line Coverage**: **88.59%** (877/990 lines covered, Threshold: >= 80%)
+- **JaCoCo Branch Coverage**: **69.33%** (208/300 branches covered, Threshold: >= 60%)
+- **Class Coverage**: **100%** (47/47 classes covered)
 - **Zero Secrets Audit**: 0 secret literals or salt fallback strings in tracked repository files.
-- **Evidence Package Location**: `/evidence/` folder containing interactive JUnit (`evidence/tests/`) and JaCoCo (`evidence/coverage/`) reports.
+- **Evidence Package Location**: `/evidence/` folder containing requirements matrix, test summary, security review, and verification report.

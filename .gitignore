@@ -38,3 +38,4 @@ out/
 
 ### Data / Local DB ###
 data/
+*.zip

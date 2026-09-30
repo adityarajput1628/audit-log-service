@@ -103,7 +103,7 @@ class SecurityAndAuthorizationTest {
     void testAuthorizedUserAccess() throws Exception {
         CreateEventRequest request = CreateEventRequest.builder()
                 .eventType("LOGIN")
-                .actorId("actor-1")
+                .actorId(ingestUser)
                 .resourceType("AUTH")
                 .resourceId("SES-1")
                 .payload(Map.of("user", "test"))

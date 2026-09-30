@@ -97,6 +97,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/audit/events").hasAnyRole("INGEST", "ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/v1/audit/events").hasAnyRole("INGEST", "AUDITOR", "ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/v1/audit/verify").hasAnyRole("AUDITOR", "ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/v1/audit/checkpoint").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/v1/audit/checkpoint/**").hasAnyRole("AUDITOR", "ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/v1/audit/export").hasAnyRole("AUDITOR", "ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/v1/compliance/client-access-report").hasAnyRole("AUDITOR", "ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/v1/audit/events/*/redact").hasRole("ADMIN")
@@ -108,6 +110,7 @@ public class SecurityConfig {
                 .frameOptions(frame -> frame.sameOrigin())
                 .xssProtection(xss -> xss.disable())
                 .contentTypeOptions(contentType -> {})
+                .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000))
             )
             .httpBasic(httpBasic -> {});
 

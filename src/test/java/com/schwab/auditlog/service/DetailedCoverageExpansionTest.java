@@ -157,7 +157,7 @@ class DetailedCoverageExpansionTest {
         // Ingest one event first so the report has real data to summarize
         CreateEventRequest request = CreateEventRequest.builder()
                 .eventType("ACCOUNT_ACCESS")
-                .actorId(auditorUser)
+                .actorId(ingestUser)
                 .resourceType("ACCOUNT")
                 .resourceId("ACC-COMPLIANCE-TEST-1")
                 .payload(Map.of("action", "VIEW"))
