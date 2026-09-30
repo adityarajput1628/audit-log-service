@@ -71,13 +71,14 @@ public class SecurityConfig {
     private String allowedOriginsConfig;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, AccountLockoutFilter accountLockoutFilter) throws Exception {
         List<String> origins = Arrays.stream(allowedOriginsConfig.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .collect(Collectors.toList());
 
         http
+            .addFilterBefore(accountLockoutFilter, org.springframework.security.web.authentication.www.BasicAuthenticationFilter.class)
             .csrf(csrf -> csrf.disable()) // Stateless token/header auth threat model
             .cors(cors -> cors.configurationSource(request -> {
                 CorsConfiguration corsConfig = new CorsConfiguration();

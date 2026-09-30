@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SecurityEventLogger.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">audit-log-service</a> &gt; <a href="index.source.html" class="el_package">com.schwab.auditlog.security</a> &gt; <span class="el_source">SecurityEventLogger.java</span></div><h1>SecurityEventLogger.java</h1><pre class="source lang-java linenums">package com.schwab.auditlog.security;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+@Component
+<span class="fc" id="L13">public class SecurityEventLogger {</span>
+
+<span class="fc" id="L15">    private static final Logger log = LoggerFactory.getLogger(&quot;SECURITY_AUDIT_LOG&quot;);</span>
+<span class="fc" id="L16">    private final ObjectMapper objectMapper = new ObjectMapper();</span>
+
+<span class="fc" id="L18">    public enum EventCategory {</span>
+<span class="fc" id="L19">        AUTHENTICATION_FAILURE,</span>
+<span class="fc" id="L20">        AUTHORIZATION_FAILURE,</span>
+<span class="fc" id="L21">        BOLA_ATTEMPT,</span>
+<span class="fc" id="L22">        ACTOR_SPOOF_ATTEMPT,</span>
+<span class="fc" id="L23">        INVALID_REQUEST,</span>
+<span class="fc" id="L24">        INTEGRITY_VERIFICATION_FAILURE,</span>
+<span class="fc" id="L25">        RETENTION_EXECUTION,</span>
+<span class="fc" id="L26">        CHECKPOINT_EVENT</span>
+    }
+
+    public void logSecurityEvent(
+            EventCategory category,
+            String principal,
+            String action,
+            String targetResource,
+            String outcome,
+            String reason,
+            Map&lt;String, Object&gt; additionalContext
+    ) {
+        try {
+<span class="fc" id="L39">            Map&lt;String, Object&gt; event = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L40">            event.put(&quot;timestamp&quot;, Instant.now().toString());</span>
+<span class="fc" id="L41">            event.put(&quot;eventCategory&quot;, category.name());</span>
+<span class="pc bpc" id="L42" title="1 of 2 branches missed.">            event.put(&quot;principal&quot;, principal != null ? principal : &quot;ANONYMOUS&quot;);</span>
+<span class="fc" id="L43">            event.put(&quot;action&quot;, action);</span>
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">            event.put(&quot;targetResource&quot;, targetResource != null ? targetResource : &quot;N/A&quot;);</span>
+<span class="fc" id="L45">            event.put(&quot;outcome&quot;, outcome);</span>
+<span class="fc" id="L46">            event.put(&quot;reason&quot;, reason);</span>
+
+<span class="pc bpc" id="L48" title="2 of 4 branches missed.">            if (additionalContext != null &amp;&amp; !additionalContext.isEmpty()) {</span>
+                // Ensure no secrets or credentials are logged
+<span class="fc" id="L50">                Map&lt;String, Object&gt; safeContext = new LinkedHashMap&lt;&gt;(additionalContext);</span>
+<span class="fc" id="L51">                safeContext.remove(&quot;password&quot;);</span>
+<span class="fc" id="L52">                safeContext.remove(&quot;secret&quot;);</span>
+<span class="fc" id="L53">                safeContext.remove(&quot;token&quot;);</span>
+<span class="fc" id="L54">                safeContext.remove(&quot;authorization&quot;);</span>
+<span class="fc" id="L55">                event.put(&quot;context&quot;, safeContext);</span>
+            }
+
+<span class="fc" id="L58">            String logJson = objectMapper.writeValueAsString(event);</span>
+<span class="pc bpc" id="L59" title="1 of 4 branches missed.">            if (&quot;FAILURE&quot;.equalsIgnoreCase(outcome) || &quot;DENIED&quot;.equalsIgnoreCase(outcome)) {</span>
+<span class="fc" id="L60">                log.warn(&quot;SECURITY_EVENT: {}&quot;, logJson);</span>
+            } else {
+<span class="fc" id="L62">                log.info(&quot;SECURITY_EVENT: {}&quot;, logJson);</span>
+            }
+<span class="nc" id="L64">        } catch (Exception e) {</span>
+<span class="nc" id="L65">            log.error(&quot;Failed to format security event log&quot;, e);</span>
+<span class="fc" id="L66">        }</span>
+<span class="fc" id="L67">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

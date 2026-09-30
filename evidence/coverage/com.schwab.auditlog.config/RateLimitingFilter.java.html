@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RateLimitingFilter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">audit-log-service</a> &gt; <a href="index.source.html" class="el_package">com.schwab.auditlog.config</a> &gt; <span class="el_source">RateLimitingFilter.java</span></div><h1>RateLimitingFilter.java</h1><pre class="source lang-java linenums">package com.schwab.auditlog.config;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+import java.time.Instant;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * Application-Level Rate Limiter Filter (Phase 7).
+ * Prevents ingestion &amp; verification endpoint abuse using sliding window token buckets per client IP.
+ */
+@Component
+<span class="fc" id="L23">public class RateLimitingFilter extends OncePerRequestFilter {</span>
+
+<span class="fc" id="L25">    private final ObjectMapper objectMapper = new ObjectMapper();</span>
+<span class="fc" id="L26">    private final Map&lt;String, TokenBucket&gt; buckets = new ConcurrentHashMap&lt;&gt;();</span>
+<span class="fc" id="L27">    private final int MAX_TOKENS = 120; // 120 requests</span>
+<span class="fc" id="L28">    private final long REFILL_WINDOW_MILLIS = 60_000; // 1 minute</span>
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
+
+<span class="fc" id="L34">        String path = request.getRequestURI();</span>
+<span class="pc bpc" id="L35" title="1 of 4 branches missed.">        if (path.startsWith(&quot;/api/v1/audit/events&quot;) || path.startsWith(&quot;/api/v1/audit/checkpoint&quot;)) {</span>
+<span class="fc" id="L36">            String clientIp = getClientIp(request);</span>
+<span class="fc" id="L37">            TokenBucket bucket = buckets.computeIfAbsent(clientIp, k -&gt; new TokenBucket(MAX_TOKENS, REFILL_WINDOW_MILLIS));</span>
+
+<span class="pc bpc" id="L39" title="1 of 2 branches missed.">            if (!bucket.tryConsume()) {</span>
+<span class="nc" id="L40">                response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());</span>
+<span class="nc" id="L41">                response.setContentType(MediaType.APPLICATION_JSON_VALUE);</span>
+<span class="nc" id="L42">                response.setHeader(&quot;Retry-After&quot;, &quot;60&quot;);</span>
+
+<span class="nc" id="L44">                Map&lt;String, Object&gt; errorDetails = Map.of(</span>
+<span class="nc" id="L45">                        &quot;timestamp&quot;, Instant.now().toString(),</span>
+<span class="nc" id="L46">                        &quot;status&quot;, 429,</span>
+                        &quot;error&quot;, &quot;Too Many Requests&quot;,
+                        &quot;message&quot;, &quot;Rate limit exceeded. Maximum 120 requests per minute allowed.&quot;,
+                        &quot;path&quot;, path
+                );
+<span class="nc" id="L51">                objectMapper.writeValue(response.getOutputStream(), errorDetails);</span>
+<span class="nc" id="L52">                return;</span>
+            }
+        }
+
+<span class="fc" id="L56">        filterChain.doFilter(request, response);</span>
+<span class="fc" id="L57">    }</span>
+
+    private String getClientIp(HttpServletRequest request) {
+<span class="fc" id="L60">        String xfHeader = request.getHeader(&quot;X-Forwarded-For&quot;);</span>
+<span class="pc bpc" id="L61" title="3 of 4 branches missed.">        if (xfHeader != null &amp;&amp; !xfHeader.isEmpty()) {</span>
+<span class="nc" id="L62">            return xfHeader.split(&quot;,&quot;)[0].trim();</span>
+        }
+<span class="fc" id="L64">        return request.getRemoteAddr();</span>
+    }
+
+    private static class TokenBucket {
+        private final int capacity;
+        private final long refillIntervalMillis;
+        private int tokens;
+        private long lastRefillTime;
+
+<span class="fc" id="L73">        public TokenBucket(int capacity, long refillIntervalMillis) {</span>
+<span class="fc" id="L74">            this.capacity = capacity;</span>
+<span class="fc" id="L75">            this.refillIntervalMillis = refillIntervalMillis;</span>
+<span class="fc" id="L76">            this.tokens = capacity;</span>
+<span class="fc" id="L77">            this.lastRefillTime = System.currentTimeMillis();</span>
+<span class="fc" id="L78">        }</span>
+
+        public synchronized boolean tryConsume() {
+<span class="fc" id="L81">            refill();</span>
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">            if (tokens &gt; 0) {</span>
+<span class="fc" id="L83">                tokens--;</span>
+<span class="fc" id="L84">                return true;</span>
+            }
+<span class="nc" id="L86">            return false;</span>
+        }
+
+        private void refill() {
+<span class="fc" id="L90">            long now = System.currentTimeMillis();</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">            if (now - lastRefillTime &gt; refillIntervalMillis) {</span>
+<span class="nc" id="L92">                tokens = capacity;</span>
+<span class="nc" id="L93">                lastRefillTime = now;</span>
+            }
+<span class="fc" id="L95">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

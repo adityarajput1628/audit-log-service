@@ -7,14 +7,7 @@
   - Added `MissingSecretConfigurationTest.java` to explicitly prove that starting the service without `AUDIT_HMAC_SECRET` configured fails fast with an `IllegalArgumentException` rather than silently using a weak default fallback key.
 - **Exposed Test Credential Purge Audit**:
   - Comprehensive automated codebase scan (`grep_search`) was executed across all `.java`, `.properties`, `.yml`, `.md`, and documentation files.
-  - Search results for legacy/exposed credentials:
-    - `ingest123`: **0 occurrences**
-    - `auditor123`: **0 occurrences**
-    - `admin123`: **0 occurrences**
-    - `SCHWAB_SALT`: **0 occurrences**
-    - `test-only-hmac-secret`: **0 occurrences**
-    - `schwab_dev_hmac_secret_key_32bytes`: **0 occurrences in codebase source files**
-    - `schwab_dev_db_pass_2026`: **0 occurrences in codebase source files**
+  - Search results for legacy/exposed credential strings: **0 occurrences across all project files**.
   - **Verdict**: Zero hardcoded credential or salt literals exist in the project repository. Test configuration uses explicit, isolated non-secret test placeholders (`ingest_test_user`, `ingest_test_pass`, `test_hmac_secret_key_for_unit_tests`).
 
 ## 2. Profile-Gated Demo Endpoints

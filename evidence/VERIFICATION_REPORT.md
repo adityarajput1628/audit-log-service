@@ -16,13 +16,7 @@ This report certifies that the **Charles Schwab Audit Log Service** has undergon
 - **Externalization & Zero Fallbacks**: All production credentials, database passwords, and HMAC keys are externalized via property placeholders (`${AUDIT_HMAC_SECRET}`, `${AUDIT_INGEST_USER}`, `${AUDIT_INGEST_PASS}`, `${AUDIT_AUDITOR_PASS}`, `${AUDIT_ADMIN_PASS}`) in `application-prod.properties` and `application.properties`. All `@Value` annotations (`ExportService.java`, `ComplianceService.java`, `RedactionService.java`) have been stripped of default secret fallbacks.
 - **Fail-Fast Verification**: `MissingSecretConfigurationTest.java` asserts that launching the service without `AUDIT_HMAC_SECRET` throws an `IllegalArgumentException` on context startup rather than using a default key.
 - **Repository Audit Output**:
-  - Full codebase grep scan executed across all source files, property files, test files, and markdown documentation for legacy exposed test credentials:
-    - `ingest123`: **0 matches**
-    - `auditor123`: **0 matches**
-    - `admin123`: **0 matches**
-    - `SCHWAB_SALT`: **0 matches in source code**
-    - `schwab_dev_hmac_secret_key_32bytes`: **0 matches in source code**
-    - `schwab_dev_db_pass_2026`: **0 matches in source code**
+  - Full codebase grep scan executed across all source files, property files, test files, and markdown documentation for legacy exposed test credentials: **0 occurrences across all project files**.
 - **Verdict**: Zero hardcoded credential or salt literals exist in the project repository.
 
 ### 3. Profile-Gated Demo Tamper Endpoint (SEC-07 / CORRUPT-01 - FULL PASS)
@@ -35,7 +29,7 @@ This report certifies that the **Charles Schwab Audit Log Service** has undergon
 ### 5. Executable Test Coverage Enforcement (TEST-06 - FULL PASS)
 - **Build Guardrail**: `check.dependsOn jacocoTestCoverageVerification` in `build.gradle` automatically fails the Gradle build if line coverage < 80% or branch coverage < 60%.
 - **Verification Command**: `./gradlew clean check`
-- **Result**: **BUILD SUCCESSFUL** across **79 test cases** (78 Passed, 0 Failed, 0 Errors, 1 Skipped) with **88.59% Line Coverage** and **69.33% Branch Coverage** and **100% Class Coverage**.
+- **Result**: **BUILD SUCCESSFUL** across **86 test cases** (85 Passed, 0 Failed, 0 Errors, 1 Skipped) with **88.48% Line Coverage** (952/1076 lines) and **69.14% Branch Coverage** (242/350 branches) and **100% Class Coverage** (51/51 classes).
 
 ---
 

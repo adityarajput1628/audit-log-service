@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ChainCheckpoint.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">audit-log-service</a> &gt; <a href="index.source.html" class="el_package">com.schwab.auditlog.model</a> &gt; <span class="el_source">ChainCheckpoint.java</span></div><h1>ChainCheckpoint.java</h1><pre class="source lang-java linenums">package com.schwab.auditlog.model;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.Instant;
+
+@Entity
+@Table(name = &quot;chain_checkpoints&quot;, indexes = {
+    @Index(name = &quot;idx_checkpoint_seq&quot;, columnList = &quot;headSequenceNumber&quot;),
+    @Index(name = &quot;idx_checkpoint_time&quot;, columnList = &quot;checkpointTimestamp&quot;)
+})
+@Getter
+<span class="pc" id="L14">@Setter</span>
+<span class="fc" id="L15">@NoArgsConstructor</span>
+<span class="fc" id="L16">@AllArgsConstructor</span>
+<span class="pc bfc" id="L17" title="All 2 branches covered.">@Builder</span>
+public class ChainCheckpoint {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+<span class="nc" id="L22">    private Long id;</span>
+
+    @Column(nullable = false, unique = true)
+<span class="fc" id="L25">    private String checkpointId;</span>
+
+    @Column(nullable = false)
+<span class="fc" id="L28">    private Long headSequenceNumber;</span>
+
+    @Column(nullable = false, length = 64)
+<span class="fc" id="L31">    private String headRecordHash;</span>
+
+    @Column(nullable = false)
+<span class="fc" id="L34">    private Instant checkpointTimestamp;</span>
+
+    @Column(nullable = false, length = 50)
+<span class="fc" id="L37">    private String checkpointVersion;</span>
+
+    @Column(nullable = false, length = 512)
+<span class="fc" id="L40">    private String signature;</span>
+
+    @Column(nullable = false, length = 50)
+    @Builder.Default
+<span class="fc" id="L44">    private String status = &quot;VALID&quot;;</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

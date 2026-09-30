@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
@@ -20,106 +21,106 @@ public class HashChainEngine {
     private final String defaultSecret;
 
     @org.springframework.beans.factory.annotation.Autowired
-<span class="fc" id="L23">    public HashChainEngine(@org.springframework.beans.factory.annotation.Value(&quot;${schwab.security.hmac.secret}&quot;) String defaultSecret) {</span>
-<span class="fc bfc" id="L24" title="All 4 branches covered.">        if (defaultSecret == null || defaultSecret.trim().isEmpty()) {</span>
-<span class="fc" id="L25">            throw new IllegalArgumentException(&quot;HMAC secret configuration (schwab.security.hmac.secret / AUDIT_HMAC_SECRET) is required and cannot be blank.&quot;);</span>
+<span class="fc" id="L24">    public HashChainEngine(@org.springframework.beans.factory.annotation.Value(&quot;${schwab.security.hmac.secret}&quot;) String defaultSecret) {</span>
+<span class="fc bfc" id="L25" title="All 4 branches covered.">        if (defaultSecret == null || defaultSecret.trim().isEmpty()) {</span>
+<span class="fc" id="L26">            throw new IllegalArgumentException(&quot;HMAC secret configuration (schwab.security.hmac.secret / AUDIT_HMAC_SECRET) is required and cannot be blank.&quot;);</span>
         }
-<span class="fc" id="L27">        this.objectMapper = new ObjectMapper();</span>
-<span class="fc" id="L28">        this.objectMapper.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);</span>
-<span class="fc" id="L29">        this.objectMapper.configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);</span>
-<span class="fc" id="L30">        this.defaultSecret = defaultSecret;</span>
-<span class="fc" id="L31">    }</span>
+<span class="fc" id="L28">        this.objectMapper = new ObjectMapper();</span>
+<span class="fc" id="L29">        this.objectMapper.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);</span>
+<span class="fc" id="L30">        this.objectMapper.configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);</span>
+<span class="fc" id="L31">        this.defaultSecret = defaultSecret;</span>
+<span class="fc" id="L32">    }</span>
 
     /**
      * Computes the SHA-256 record hash for an AuditRecord.
      */
     public String calculateRecordHash(AuditRecord record) {
-<span class="fc" id="L37">        String payloadHash = calculatePayloadHash(record.getPayloadJson(), record.getRedactionsJson(), record.getPreviousHash());</span>
-<span class="fc" id="L38">        String timestampIso = record.getTimestamp().truncatedTo(ChronoUnit.MILLIS).toString();</span>
+<span class="fc" id="L38">        String payloadHash = calculatePayloadHash(record.getPayloadJson(), record.getRedactionsJson(), record.getPreviousHash());</span>
+<span class="fc" id="L39">        String timestampIso = Instant.ofEpochMilli(record.getTimestamp().toEpochMilli()).toString();</span>
         
-<span class="fc" id="L40">        String canonicalString = String.join(&quot;|&quot;,</span>
-<span class="fc" id="L41">                String.valueOf(record.getSequenceNumber()),</span>
-<span class="fc" id="L42">                record.getEventType(),</span>
-<span class="fc" id="L43">                record.getActorId(),</span>
-<span class="fc" id="L44">                record.getResourceType(),</span>
-<span class="fc" id="L45">                record.getResourceId(),</span>
+<span class="fc" id="L41">        String canonicalString = String.join(&quot;|&quot;,</span>
+<span class="fc" id="L42">                String.valueOf(record.getSequenceNumber()),</span>
+<span class="fc" id="L43">                record.getEventType(),</span>
+<span class="fc" id="L44">                record.getActorId(),</span>
+<span class="fc" id="L45">                record.getResourceType(),</span>
+<span class="fc" id="L46">                record.getResourceId(),</span>
                 payloadHash,
                 timestampIso,
-<span class="fc" id="L48">                record.getPreviousHash()</span>
+<span class="fc" id="L49">                record.getPreviousHash()</span>
         );
 
-<span class="fc" id="L51">        return sha256Hex(canonicalString);</span>
+<span class="fc" id="L52">        return sha256Hex(canonicalString);</span>
     }
 
     /**
      * Computes payload hash. If redaction metadata exists, handles redacted field hashes.
      */
     public String calculatePayloadHash(String payloadJson, String redactionsJson, String recordSalt) {
-<span class="pc bpc" id="L58" title="1 of 4 branches missed.">        if (payloadJson == null || payloadJson.trim().isEmpty()) {</span>
-<span class="fc" id="L59">            return sha256Hex(&quot;{}&quot;);</span>
+<span class="pc bpc" id="L59" title="1 of 4 branches missed.">        if (payloadJson == null || payloadJson.trim().isEmpty()) {</span>
+<span class="fc" id="L60">            return sha256Hex(&quot;{}&quot;);</span>
         }
 
-<span class="fc" id="L62">        Map&lt;String, RedactionEntry&gt; redactionsMap = new HashMap&lt;&gt;();</span>
-<span class="pc bpc" id="L63" title="1 of 4 branches missed.">        if (redactionsJson != null &amp;&amp; !redactionsJson.trim().isEmpty()) {</span>
+<span class="fc" id="L63">        Map&lt;String, RedactionEntry&gt; redactionsMap = new HashMap&lt;&gt;();</span>
+<span class="pc bpc" id="L64" title="1 of 4 branches missed.">        if (redactionsJson != null &amp;&amp; !redactionsJson.trim().isEmpty()) {</span>
             try {
-<span class="fc" id="L65">                redactionsMap = objectMapper.readValue(redactionsJson, new TypeReference&lt;Map&lt;String, RedactionEntry&gt;&gt;() {});</span>
-<span class="fc" id="L66">            } catch (Exception e) {</span>
-<span class="fc" id="L67">                throw new IllegalArgumentException(&quot;Corrupt redactions metadata JSON: &quot; + e.getMessage(), e);</span>
-<span class="fc" id="L68">            }</span>
+<span class="fc" id="L66">                redactionsMap = objectMapper.readValue(redactionsJson, new TypeReference&lt;Map&lt;String, RedactionEntry&gt;&gt;() {});</span>
+<span class="fc" id="L67">            } catch (Exception e) {</span>
+<span class="fc" id="L68">                throw new IllegalArgumentException(&quot;Corrupt redactions metadata JSON: &quot; + e.getMessage(), e);</span>
+<span class="fc" id="L69">            }</span>
         }
 
         Map&lt;String, Object&gt; payloadMap;
         try {
-<span class="fc" id="L73">            payloadMap = objectMapper.readValue(payloadJson, new TypeReference&lt;&gt;() {});</span>
-<span class="fc" id="L74">        } catch (Exception e) {</span>
-<span class="fc" id="L75">            throw new IllegalArgumentException(&quot;Malformed payload JSON: &quot; + e.getMessage(), e);</span>
-<span class="fc" id="L76">        }</span>
+<span class="fc" id="L74">            payloadMap = objectMapper.readValue(payloadJson, new TypeReference&lt;&gt;() {});</span>
+<span class="fc" id="L75">        } catch (Exception e) {</span>
+<span class="fc" id="L76">            throw new IllegalArgumentException(&quot;Malformed payload JSON: &quot; + e.getMessage(), e);</span>
+<span class="fc" id="L77">        }</span>
 
-<span class="pc bpc" id="L78" title="2 of 4 branches missed.">        String salt = (recordSalt != null &amp;&amp; !recordSalt.isEmpty()) ? recordSalt : defaultSecret;</span>
-<span class="fc" id="L79">        Map&lt;String, Object&gt; normalizedMap = normalizePayloadForHash(payloadMap, redactionsMap, &quot;&quot;, salt);</span>
+<span class="pc bpc" id="L79" title="2 of 4 branches missed.">        String salt = (recordSalt != null &amp;&amp; !recordSalt.isEmpty()) ? recordSalt : defaultSecret;</span>
+<span class="fc" id="L80">        Map&lt;String, Object&gt; normalizedMap = normalizePayloadForHash(payloadMap, redactionsMap, &quot;&quot;, salt);</span>
         try {
-<span class="fc" id="L81">            String canonicalJson = objectMapper.writeValueAsString(normalizedMap);</span>
-<span class="fc" id="L82">            return sha256Hex(canonicalJson);</span>
-<span class="nc" id="L83">        } catch (Exception e) {</span>
-<span class="nc" id="L84">            throw new IllegalStateException(&quot;Failed to serialize normalized payload for hashing: &quot; + e.getMessage(), e);</span>
+<span class="fc" id="L82">            String canonicalJson = objectMapper.writeValueAsString(normalizedMap);</span>
+<span class="fc" id="L83">            return sha256Hex(canonicalJson);</span>
+<span class="nc" id="L84">        } catch (Exception e) {</span>
+<span class="nc" id="L85">            throw new IllegalStateException(&quot;Failed to serialize normalized payload for hashing: &quot; + e.getMessage(), e);</span>
         }
     }
 
     @SuppressWarnings(&quot;unchecked&quot;)
     private Map&lt;String, Object&gt; normalizePayloadForHash(Map&lt;String, Object&gt; map, Map&lt;String, RedactionEntry&gt; redactionMap, String parentPath, String salt) {
-<span class="fc" id="L90">        Map&lt;String, Object&gt; result = new TreeMap&lt;&gt;();</span>
-<span class="fc bfc" id="L91" title="All 2 branches covered.">        for (Map.Entry&lt;String, Object&gt; entry : map.entrySet()) {</span>
-<span class="fc" id="L92">            String key = entry.getKey();</span>
-<span class="fc" id="L93">            Object val = entry.getValue();</span>
-<span class="fc bfc" id="L94" title="All 2 branches covered.">            String currentPath = parentPath.isEmpty() ? key : parentPath + &quot;.&quot; + key;</span>
+<span class="fc" id="L91">        Map&lt;String, Object&gt; result = new TreeMap&lt;&gt;();</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        for (Map.Entry&lt;String, Object&gt; entry : map.entrySet()) {</span>
+<span class="fc" id="L93">            String key = entry.getKey();</span>
+<span class="fc" id="L94">            Object val = entry.getValue();</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">            String currentPath = parentPath.isEmpty() ? key : parentPath + &quot;.&quot; + key;</span>
 
-<span class="pc bpc" id="L96" title="1 of 4 branches missed.">            if (redactionMap.containsKey(currentPath) &amp;&amp; &quot;[REDACTED]&quot;.equals(val)) {</span>
+<span class="pc bpc" id="L97" title="1 of 4 branches missed.">            if (redactionMap.containsKey(currentPath) &amp;&amp; &quot;[REDACTED]&quot;.equals(val)) {</span>
                 // Use preserved field hash
-<span class="fc" id="L98">                result.put(key, redactionMap.get(currentPath).getFieldHash());</span>
-<span class="fc bfc" id="L99" title="All 2 branches covered.">            } else if (val instanceof Map) {</span>
-<span class="fc" id="L100">                result.put(key, normalizePayloadForHash((Map&lt;String, Object&gt;) val, redactionMap, currentPath, salt));</span>
+<span class="fc" id="L99">                result.put(key, redactionMap.get(currentPath).getFieldHash());</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">            } else if (val instanceof Map) {</span>
+<span class="fc" id="L101">                result.put(key, normalizePayloadForHash((Map&lt;String, Object&gt;) val, redactionMap, currentPath, salt));</span>
             } else {
                 // Compute field hash using field salt
-<span class="pc bpc" id="L103" title="1 of 2 branches missed.">                String fieldSalt = redactionMap.containsKey(currentPath) ? redactionMap.get(currentPath).getSalt() : salt;</span>
-<span class="fc" id="L104">                result.put(key, hashFieldValue(val, fieldSalt));</span>
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">                String fieldSalt = redactionMap.containsKey(currentPath) ? redactionMap.get(currentPath).getSalt() : salt;</span>
+<span class="fc" id="L105">                result.put(key, hashFieldValue(val, fieldSalt));</span>
             }
-<span class="fc" id="L106">        }</span>
-<span class="fc" id="L107">        return result;</span>
+<span class="fc" id="L107">        }</span>
+<span class="fc" id="L108">        return result;</span>
     }
 
     /**
      * Computes field hash with salt for zero-knowledge redaction verification.
      */
     public String hashFieldValue(Object value, String salt) {
-<span class="fc bfc" id="L114" title="All 2 branches covered.">        String valStr = value == null ? &quot;null&quot; : value.toString();</span>
-<span class="fc" id="L115">        return sha256Hex(valStr + &quot;:&quot; + salt);</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        String valStr = value == null ? &quot;null&quot; : value.toString();</span>
+<span class="fc" id="L116">        return sha256Hex(valStr + &quot;:&quot; + salt);</span>
     }
 
     /**
      * HMAC-SHA256 helper method for keyed proof signatures using injected default secret.
      */
     public String hmacSha256(String input) {
-<span class="fc" id="L122">        return hmacSha256(input, this.defaultSecret);</span>
+<span class="fc" id="L123">        return hmacSha256(input, this.defaultSecret);</span>
     }
 
     /**
@@ -127,22 +128,22 @@ public class HashChainEngine {
      */
     public String hmacSha256(String input, String secretKey) {
         try {
-<span class="fc" id="L130">            javax.crypto.Mac mac = javax.crypto.Mac.getInstance(&quot;HmacSHA256&quot;);</span>
-<span class="fc" id="L131">            javax.crypto.spec.SecretKeySpec secretKeySpec = new javax.crypto.spec.SecretKeySpec(</span>
-<span class="pc bpc" id="L132" title="2 of 4 branches missed.">                    (secretKey != null &amp;&amp; !secretKey.isEmpty() ? secretKey : defaultSecret).getBytes(StandardCharsets.UTF_8), &quot;HmacSHA256&quot;);</span>
-<span class="fc" id="L133">            mac.init(secretKeySpec);</span>
-<span class="fc" id="L134">            byte[] hash = mac.doFinal(input.getBytes(StandardCharsets.UTF_8));</span>
-<span class="fc" id="L135">            StringBuilder hexString = new StringBuilder(2 * hash.length);</span>
-<span class="fc bfc" id="L136" title="All 2 branches covered.">            for (byte b : hash) {</span>
-<span class="fc" id="L137">                String hex = Integer.toHexString(0xff &amp; b);</span>
-<span class="fc bfc" id="L138" title="All 2 branches covered.">                if (hex.length() == 1) {</span>
-<span class="fc" id="L139">                    hexString.append('0');</span>
+<span class="fc" id="L131">            javax.crypto.Mac mac = javax.crypto.Mac.getInstance(&quot;HmacSHA256&quot;);</span>
+<span class="fc" id="L132">            javax.crypto.spec.SecretKeySpec secretKeySpec = new javax.crypto.spec.SecretKeySpec(</span>
+<span class="pc bpc" id="L133" title="2 of 4 branches missed.">                    (secretKey != null &amp;&amp; !secretKey.isEmpty() ? secretKey : defaultSecret).getBytes(StandardCharsets.UTF_8), &quot;HmacSHA256&quot;);</span>
+<span class="fc" id="L134">            mac.init(secretKeySpec);</span>
+<span class="fc" id="L135">            byte[] hash = mac.doFinal(input.getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L136">            StringBuilder hexString = new StringBuilder(2 * hash.length);</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">            for (byte b : hash) {</span>
+<span class="fc" id="L138">                String hex = Integer.toHexString(0xff &amp; b);</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">                if (hex.length() == 1) {</span>
+<span class="fc" id="L140">                    hexString.append('0');</span>
                 }
-<span class="fc" id="L141">                hexString.append(hex);</span>
+<span class="fc" id="L142">                hexString.append(hex);</span>
             }
-<span class="fc" id="L143">            return hexString.toString();</span>
-<span class="nc" id="L144">        } catch (Exception e) {</span>
-<span class="nc" id="L145">            throw new RuntimeException(&quot;Failed to compute HMAC-SHA256&quot;, e);</span>
+<span class="fc" id="L144">            return hexString.toString();</span>
+<span class="nc" id="L145">        } catch (Exception e) {</span>
+<span class="nc" id="L146">            throw new RuntimeException(&quot;Failed to compute HMAC-SHA256&quot;, e);</span>
         }
     }
 
@@ -151,19 +152,19 @@ public class HashChainEngine {
      */
     public String sha256Hex(String input) {
         try {
-<span class="fc" id="L154">            MessageDigest digest = MessageDigest.getInstance(&quot;SHA-256&quot;);</span>
-<span class="fc" id="L155">            byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));</span>
-<span class="fc" id="L156">            StringBuilder hexString = new StringBuilder(2 * hash.length);</span>
-<span class="fc bfc" id="L157" title="All 2 branches covered.">            for (byte b : hash) {</span>
-<span class="fc" id="L158">                String hex = Integer.toHexString(0xff &amp; b);</span>
-<span class="fc bfc" id="L159" title="All 2 branches covered.">                if (hex.length() == 1) {</span>
-<span class="fc" id="L160">                    hexString.append('0');</span>
+<span class="fc" id="L155">            MessageDigest digest = MessageDigest.getInstance(&quot;SHA-256&quot;);</span>
+<span class="fc" id="L156">            byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L157">            StringBuilder hexString = new StringBuilder(2 * hash.length);</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">            for (byte b : hash) {</span>
+<span class="fc" id="L159">                String hex = Integer.toHexString(0xff &amp; b);</span>
+<span class="fc bfc" id="L160" title="All 2 branches covered.">                if (hex.length() == 1) {</span>
+<span class="fc" id="L161">                    hexString.append('0');</span>
                 }
-<span class="fc" id="L162">                hexString.append(hex);</span>
+<span class="fc" id="L163">                hexString.append(hex);</span>
             }
-<span class="fc" id="L164">            return hexString.toString();</span>
-<span class="nc" id="L165">        } catch (NoSuchAlgorithmException e) {</span>
-<span class="nc" id="L166">            throw new RuntimeException(&quot;SHA-256 algorithm not available&quot;, e);</span>
+<span class="fc" id="L165">            return hexString.toString();</span>
+<span class="nc" id="L166">        } catch (NoSuchAlgorithmException e) {</span>
+<span class="nc" id="L167">            throw new RuntimeException(&quot;SHA-256 algorithm not available&quot;, e);</span>
         }
     }
 
@@ -171,18 +172,18 @@ public class HashChainEngine {
         private String salt;
         private String fieldHash;
 
-<span class="fc" id="L174">        public RedactionEntry() {}</span>
+<span class="fc" id="L175">        public RedactionEntry() {}</span>
 
-<span class="fc" id="L176">        public RedactionEntry(String salt, String fieldHash) {</span>
-<span class="fc" id="L177">            this.salt = salt;</span>
-<span class="fc" id="L178">            this.fieldHash = fieldHash;</span>
-<span class="fc" id="L179">        }</span>
+<span class="fc" id="L177">        public RedactionEntry(String salt, String fieldHash) {</span>
+<span class="fc" id="L178">            this.salt = salt;</span>
+<span class="fc" id="L179">            this.fieldHash = fieldHash;</span>
+<span class="fc" id="L180">        }</span>
 
-<span class="fc" id="L181">        public String getSalt() { return salt; }</span>
-<span class="fc" id="L182">        public void setSalt(String salt) { this.salt = salt; }</span>
+<span class="fc" id="L182">        public String getSalt() { return salt; }</span>
+<span class="fc" id="L183">        public void setSalt(String salt) { this.salt = salt; }</span>
 
-<span class="fc" id="L184">        public String getFieldHash() { return fieldHash; }</span>
-<span class="fc" id="L185">        public void setFieldHash(String fieldHash) { this.fieldHash = fieldHash; }</span>
+<span class="fc" id="L185">        public String getFieldHash() { return fieldHash; }</span>
+<span class="fc" id="L186">        public void setFieldHash(String fieldHash) { this.fieldHash = fieldHash; }</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

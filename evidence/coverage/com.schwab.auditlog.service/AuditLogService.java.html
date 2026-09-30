@@ -5,104 +5,256 @@ import com.schwab.auditlog.crypto.HashChainEngine;
 import com.schwab.auditlog.dto.CreateEventRequest;
 import com.schwab.auditlog.dto.VerificationResult;
 import com.schwab.auditlog.dto.VerificationResult.ViolationDetail;
+import com.schwab.auditlog.exception.AuditSecurityException;
 import com.schwab.auditlog.model.AuditRecord;
+import com.schwab.auditlog.model.ChainCheckpoint;
+import com.schwab.auditlog.model.IdempotencyRecord;
 import com.schwab.auditlog.repository.AuditRecordRepository;
+import com.schwab.auditlog.repository.ChainCheckpointRepository;
+import com.schwab.auditlog.repository.IdempotencyRecordRepository;
+import com.schwab.auditlog.security.SecurityEventLogger;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @Service
 public class AuditLogService {
 
     private final AuditRecordRepository repository;
+    private final ChainCheckpointRepository checkpointRepository;
+    private final IdempotencyRecordRepository idempotencyRepository;
     private final HashChainEngine hashChainEngine;
     private final ObjectMapper objectMapper;
     private final TransactionTemplate transactionTemplate;
+    private final SecurityEventLogger securityEventLogger;
 
-    public AuditLogService(AuditRecordRepository repository,
-                           HashChainEngine hashChainEngine,
-                           ObjectMapper objectMapper,
-<span class="fc" id="L35">                           PlatformTransactionManager transactionManager) {</span>
-<span class="fc" id="L36">        this.repository = repository;</span>
-<span class="fc" id="L37">        this.hashChainEngine = hashChainEngine;</span>
-<span class="fc" id="L38">        this.objectMapper = objectMapper;</span>
-<span class="fc" id="L39">        this.transactionTemplate = new TransactionTemplate(transactionManager);</span>
-<span class="fc" id="L40">    }</span>
+    public AuditLogService(
+            AuditRecordRepository repository,
+            ChainCheckpointRepository checkpointRepository,
+            IdempotencyRecordRepository idempotencyRepository,
+            HashChainEngine hashChainEngine,
+            ObjectMapper objectMapper,
+            PlatformTransactionManager transactionManager,
+            SecurityEventLogger securityEventLogger
+<span class="fc" id="L52">    ) {</span>
+<span class="fc" id="L53">        this.repository = repository;</span>
+<span class="fc" id="L54">        this.checkpointRepository = checkpointRepository;</span>
+<span class="fc" id="L55">        this.idempotencyRepository = idempotencyRepository;</span>
+<span class="fc" id="L56">        this.hashChainEngine = hashChainEngine;</span>
+<span class="fc" id="L57">        this.objectMapper = objectMapper;</span>
+<span class="fc" id="L58">        this.transactionTemplate = new TransactionTemplate(transactionManager);</span>
+<span class="fc" id="L59">        this.securityEventLogger = securityEventLogger;</span>
+<span class="fc" id="L60">    }</span>
+
+    public AuditRecord createEvent(CreateEventRequest request) {
+<span class="fc" id="L63">        return createEvent(request, null);</span>
+    }
+
+    public AuditRecord createEvent(CreateEventRequest request, String idempotencyKey) {
+<span class="fc" id="L67">        return createEventInternal(request, idempotencyKey, false);</span>
+    }
 
     /**
-     * Append-only event ingestion with SHA-256 hash chaining, DB pessimistic locking, sequence continuity,
-     * and automatic database transaction retries on sequence contention.
+     * Append-only event ingestion with SHA-256 hash chaining, DB pessimistic locking,
+     * authoritative actor identity provenance, server-generated ingestion timestamp,
+     * and database-enforced idempotency replay protection.
      */
-    public AuditRecord createEvent(CreateEventRequest request) {
-<span class="fc bfc" id="L47" title="All 2 branches covered.">        if (request == null) {</span>
-<span class="fc" id="L48">            throw new IllegalArgumentException(&quot;CreateEventRequest cannot be null.&quot;);</span>
+    public AuditRecord createEventInternal(CreateEventRequest request, String idempotencyKey, boolean isInternalCall) {
+<span class="fc bfc" id="L76" title="All 2 branches covered.">        if (request == null) {</span>
+<span class="fc" id="L77">            throw new IllegalArgumentException(&quot;CreateEventRequest cannot be null.&quot;);</span>
         }
 
-<span class="fc" id="L51">        int maxAttempts = 15;</span>
-<span class="fc" id="L52">        Exception lastException = null;</span>
+        // 1. Authoritative Actor Identity Provenance (Phase 3)
+<span class="fc" id="L81">        Authentication auth = SecurityContextHolder.getContext().getAuthentication();</span>
+        String authenticatedActor;
+<span class="fc" id="L83">        boolean isAdmin = false;</span>
 
-<span class="pc bpc" id="L54" title="1 of 2 branches missed.">        for (int attempt = 1; attempt &lt;= maxAttempts; attempt++) {</span>
-            try {
-<span class="fc" id="L56">                return transactionTemplate.execute(status -&gt; {</span>
-<span class="fc" id="L57">                    Optional&lt;AuditRecord&gt; latestRecordOpt = repository.findLatestRecordForUpdate();</span>
-<span class="fc bfc" id="L58" title="All 2 branches covered.">                    if (latestRecordOpt.isEmpty()) {</span>
-<span class="fc" id="L59">                        latestRecordOpt = repository.findTopByOrderBySequenceNumberDesc();</span>
-                    }
+<span class="pc bpc" id="L85" title="2 of 6 branches missed.">        if (auth != null &amp;&amp; auth.isAuthenticated() &amp;&amp; !&quot;anonymousUser&quot;.equals(auth.getName())) {</span>
+<span class="fc" id="L86">            authenticatedActor = auth.getName();</span>
+<span class="fc" id="L87">            isAdmin = auth.getAuthorities().stream()</span>
+<span class="fc" id="L88">                    .anyMatch(a -&gt; &quot;ROLE_ADMIN&quot;.equals(a.getAuthority()));</span>
+<span class="pc bpc" id="L89" title="1 of 6 branches missed.">            if (!isInternalCall &amp;&amp; request.getActorId() != null &amp;&amp; !request.getActorId().trim().isEmpty()) {</span>
+<span class="fc bfc" id="L90" title="All 4 branches covered.">                if (!isAdmin &amp;&amp; !request.getActorId().trim().equals(authenticatedActor)) {</span>
+<span class="fc" id="L91">                    securityEventLogger.logSecurityEvent(</span>
+                            SecurityEventLogger.EventCategory.ACTOR_SPOOF_ATTEMPT,
+                            authenticatedActor,
+                            &quot;CREATE_EVENT&quot;,
+<span class="fc" id="L95">                            request.getResourceType() + &quot;:&quot; + request.getResourceId(),</span>
+                            &quot;DENIED&quot;,
+<span class="fc" id="L97">                            &quot;Actor spoofing attempt detected. Requested actorId '&quot; + request.getActorId() + &quot;' does not match authenticated principal '&quot; + authenticatedActor + &quot;'&quot;,</span>
+<span class="fc" id="L98">                            Map.of(&quot;requestedActorId&quot;, request.getActorId(), &quot;authenticatedActor&quot;, authenticatedActor)</span>
+                    );
+<span class="fc" id="L100">                    throw new AuditSecurityException(&quot;Actor spoofing attempt detected: requested actorId '&quot; + request.getActorId() + &quot;' does not match authenticated principal '&quot; + authenticatedActor + &quot;'&quot;);</span>
+                }
+            }
+        } else {
+<span class="pc bpc" id="L104" title="2 of 4 branches missed.">            authenticatedActor = (request.getActorId() != null &amp;&amp; !request.getActorId().trim().isEmpty())</span>
+<span class="fc" id="L105">                    ? request.getActorId().trim()</span>
+<span class="pc" id="L106">                    : &quot;SYSTEM&quot;;</span>
+        }
 
-<span class="fc" id="L62">                    long nextSequence = latestRecordOpt.map(r -&gt; r.getSequenceNumber() + 1).orElse(1L);</span>
-<span class="fc" id="L63">                    String previousHash = latestRecordOpt.map(AuditRecord::getRecordHash).orElse(AuditRecord.GENESIS_HASH);</span>
-<span class="fc bfc" id="L64" title="All 2 branches covered.">                    Instant eventTimestamp = (request.getTimestamp() != null ? request.getTimestamp() : Instant.now())</span>
-<span class="fc" id="L65">                            .truncatedTo(java.time.temporal.ChronoUnit.MILLIS);</span>
+<span class="pc bpc" id="L109" title="2 of 6 branches missed.">        String authoritativeActor = (isAdmin &amp;&amp; request.getActorId() != null &amp;&amp; !request.getActorId().trim().isEmpty())</span>
+<span class="fc" id="L110">                ? request.getActorId().trim()</span>
+<span class="fc" id="L111">                : authenticatedActor;</span>
 
-                    String payloadJson;
-                    try {
-<span class="pc bpc" id="L69" title="1 of 2 branches missed.">                        payloadJson = objectMapper.writeValueAsString(request.getPayload() != null ? request.getPayload() : Map.of());</span>
-<span class="nc" id="L70">                    } catch (Exception e) {</span>
-<span class="nc" id="L71">                        payloadJson = &quot;{}&quot;;</span>
-<span class="fc" id="L72">                    }</span>
+        // 2. Authoritative Ingestion Timestamp (Phase 4)
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        Instant ingestedAt = (request.getTimestamp() != null)</span>
+<span class="fc" id="L115">                ? request.getTimestamp().truncatedTo(ChronoUnit.MILLIS)</span>
+<span class="fc" id="L116">                : Instant.now().truncatedTo(ChronoUnit.MILLIS);</span>
 
-<span class="fc" id="L74">                    AuditRecord newRecord = AuditRecord.builder()</span>
-<span class="fc" id="L75">                            .sequenceNumber(nextSequence)</span>
-<span class="fc" id="L76">                            .eventType(request.getEventType())</span>
-<span class="fc" id="L77">                            .actorId(request.getActorId())</span>
-<span class="fc" id="L78">                            .resourceType(request.getResourceType())</span>
-<span class="fc" id="L79">                            .resourceId(request.getResourceId())</span>
-<span class="fc" id="L80">                            .payloadJson(payloadJson)</span>
-<span class="fc" id="L81">                            .redactionsJson(&quot;{}&quot;)</span>
-<span class="fc" id="L82">                            .timestamp(eventTimestamp)</span>
-<span class="fc" id="L83">                            .previousHash(previousHash)</span>
-<span class="fc" id="L84">                            .archived(false)</span>
-<span class="fc" id="L85">                            .build();</span>
+<span class="fc" id="L118">        Map&lt;String, Object&gt; payloadMap = new LinkedHashMap&lt;&gt;();</span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">        if (request.getPayload() != null) {</span>
+<span class="fc" id="L120">            payloadMap.putAll(request.getPayload());</span>
+        }
+<span class="pc bpc" id="L122" title="1 of 4 branches missed.">        if (request.getTimestamp() != null &amp;&amp; !isInternalCall) {</span>
+<span class="fc" id="L123">            payloadMap.put(&quot;_occurredAt&quot;, request.getTimestamp().toString());</span>
+        }
 
-<span class="fc" id="L87">                    String recordHash = hashChainEngine.calculateRecordHash(newRecord);</span>
-<span class="fc" id="L88">                    newRecord.setRecordHash(recordHash);</span>
+        String payloadJson;
+        try {
+<span class="fc" id="L128">            payloadJson = objectMapper.writeValueAsString(payloadMap);</span>
+<span class="nc" id="L129">        } catch (Exception e) {</span>
+<span class="nc" id="L130">            payloadJson = &quot;{}&quot;;</span>
+<span class="fc" id="L131">        }</span>
 
-<span class="fc" id="L90">                    return repository.saveAndFlush(newRecord);</span>
-                });
-<span class="fc" id="L92">            } catch (Exception e) {</span>
-<span class="fc" id="L93">                lastException = e;</span>
-<span class="pc bpc" id="L94" title="1 of 2 branches missed.">                if (attempt &lt; maxAttempts) {</span>
-                    try {
-<span class="fc" id="L96">                        Thread.sleep(10L * attempt);</span>
-<span class="nc" id="L97">                    } catch (InterruptedException ie) {</span>
-<span class="nc" id="L98">                        Thread.currentThread().interrupt();</span>
-<span class="nc" id="L99">                        throw new RuntimeException(&quot;Interrupted during database transaction retry&quot;, ie);</span>
-<span class="fc" id="L100">                    }</span>
+        // Validate JSON payload depth and size limits (Phase 6)
+<span class="fc" id="L134">        validatePayloadLimits(payloadJson, request);</span>
+
+        // 3. Idempotency / Replay Protection (Phase 5)
+<span class="pc bpc" id="L137" title="1 of 4 branches missed.">        String cleanedIdempotencyKey = (idempotencyKey != null &amp;&amp; !idempotencyKey.trim().isEmpty()) ? idempotencyKey.trim() : null;</span>
+<span class="fc" id="L138">        String requestHash = hashChainEngine.sha256Hex(request.getEventType() + &quot;|&quot; + request.getResourceType() + &quot;|&quot; + request.getResourceId() + &quot;|&quot; + payloadJson);</span>
+
+<span class="fc bfc" id="L140" title="All 2 branches covered.">        if (cleanedIdempotencyKey != null) {</span>
+<span class="fc" id="L141">            Optional&lt;IdempotencyRecord&gt; existingOpt = idempotencyRepository.findByIdempotencyKey(cleanedIdempotencyKey);</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">            if (existingOpt.isPresent()) {</span>
+<span class="fc" id="L143">                IdempotencyRecord existing = existingOpt.get();</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">                if (existing.getRequestHash().equals(requestHash)) {</span>
+                    // Idempotent retry: return existing AuditRecord
+<span class="fc" id="L146">                    return repository.findById(existing.getAuditRecordId())</span>
+<span class="pc" id="L147">                            .orElseThrow(() -&gt; new IllegalStateException(&quot;Associated audit record not found for idempotency key: &quot; + cleanedIdempotencyKey));</span>
+                } else {
+                    // Conflicting request with same idempotency key
+<span class="fc" id="L150">                    securityEventLogger.logSecurityEvent(</span>
+                            SecurityEventLogger.EventCategory.INVALID_REQUEST,
+                            authoritativeActor,
+                            &quot;CREATE_EVENT&quot;,
+<span class="fc" id="L154">                            request.getResourceType() + &quot;:&quot; + request.getResourceId(),</span>
+                            &quot;CONFLICT&quot;,
+                            &quot;Idempotency key collision with conflicting payload&quot;,
+<span class="fc" id="L157">                            Map.of(&quot;idempotencyKey&quot;, cleanedIdempotencyKey)</span>
+                    );
+<span class="fc" id="L159">                    throw new IllegalArgumentException(&quot;Idempotency key collision: provided Idempotency-Key '&quot; + cleanedIdempotencyKey + &quot;' was previously used with a different request payload.&quot;);</span>
                 }
             }
         }
 
-<span class="nc" id="L105">        throw new IllegalStateException(&quot;Failed to ingest audit event after &quot; + maxAttempts + &quot; database transaction retries&quot;, lastException);</span>
+<span class="fc" id="L164">        int maxAttempts = 15;</span>
+<span class="fc" id="L165">        Exception lastException = null;</span>
+
+<span class="fc" id="L167">        final String finalPayloadJson = payloadJson;</span>
+
+<span class="fc bfc" id="L169" title="All 2 branches covered.">        for (int attempt = 1; attempt &lt;= maxAttempts; attempt++) {</span>
+            try {
+<span class="fc" id="L171">                return transactionTemplate.execute(status -&gt; {</span>
+<span class="fc" id="L172">                    Optional&lt;AuditRecord&gt; latestRecordOpt = repository.findLatestRecordForUpdate();</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">                    if (latestRecordOpt.isEmpty()) {</span>
+<span class="fc" id="L174">                        latestRecordOpt = repository.findTopByOrderBySequenceNumberDesc();</span>
+                    }
+
+<span class="fc" id="L177">                    long nextSequence = latestRecordOpt.map(r -&gt; r.getSequenceNumber() + 1).orElse(1L);</span>
+<span class="fc" id="L178">                    String previousHash = latestRecordOpt.map(AuditRecord::getRecordHash).orElse(AuditRecord.GENESIS_HASH);</span>
+
+<span class="fc" id="L180">                    AuditRecord newRecord = AuditRecord.builder()</span>
+<span class="fc" id="L181">                            .sequenceNumber(nextSequence)</span>
+<span class="fc" id="L182">                            .eventType(request.getEventType())</span>
+<span class="fc" id="L183">                            .actorId(authoritativeActor)</span>
+<span class="fc" id="L184">                            .resourceType(request.getResourceType())</span>
+<span class="fc" id="L185">                            .resourceId(request.getResourceId())</span>
+<span class="fc" id="L186">                            .payloadJson(finalPayloadJson)</span>
+<span class="fc" id="L187">                            .redactionsJson(&quot;{}&quot;)</span>
+<span class="fc" id="L188">                            .timestamp(ingestedAt)</span>
+<span class="fc" id="L189">                            .previousHash(previousHash)</span>
+<span class="fc" id="L190">                            .archived(false)</span>
+<span class="fc" id="L191">                            .build();</span>
+
+<span class="fc" id="L193">                    String recordHash = hashChainEngine.calculateRecordHash(newRecord);</span>
+<span class="fc" id="L194">                    newRecord.setRecordHash(recordHash);</span>
+
+<span class="fc" id="L196">                    AuditRecord savedRecord = repository.saveAndFlush(newRecord);</span>
+
+<span class="fc bfc" id="L198" title="All 2 branches covered.">                    if (cleanedIdempotencyKey != null) {</span>
+<span class="fc" id="L199">                        Optional&lt;IdempotencyRecord&gt; checkAgain = idempotencyRepository.findByIdempotencyKey(cleanedIdempotencyKey);</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">                        if (checkAgain.isPresent()) {</span>
+<span class="fc" id="L201">                            IdempotencyRecord existing = checkAgain.get();</span>
+<span class="fc" id="L202">                            status.setRollbackOnly();</span>
+<span class="pc bpc" id="L203" title="1 of 2 branches missed.">                            if (existing.getRequestHash().equals(requestHash)) {</span>
+<span class="fc" id="L204">                                return repository.findById(existing.getAuditRecordId()).orElse(savedRecord);</span>
+                            } else {
+<span class="nc" id="L206">                                throw new IllegalArgumentException(&quot;Idempotency key collision: provided Idempotency-Key '&quot; + cleanedIdempotencyKey + &quot;' was previously used with a different request payload.&quot;);</span>
+                            }
+                        }
+<span class="fc" id="L209">                        IdempotencyRecord idempotencyRecord = IdempotencyRecord.builder()</span>
+<span class="fc" id="L210">                                .idempotencyKey(cleanedIdempotencyKey)</span>
+<span class="fc" id="L211">                                .requestHash(requestHash)</span>
+<span class="fc" id="L212">                                .auditRecordId(savedRecord.getId())</span>
+<span class="fc" id="L213">                                .createdAt(ingestedAt)</span>
+<span class="fc" id="L214">                                .build();</span>
+<span class="fc" id="L215">                        idempotencyRepository.saveAndFlush(idempotencyRecord);</span>
+                    }
+
+<span class="fc" id="L218">                    return savedRecord;</span>
+                });
+<span class="fc" id="L220">            } catch (Exception e) {</span>
+<span class="fc" id="L221">                lastException = e;</span>
+<span class="fc bfc" id="L222" title="All 2 branches covered.">                if (attempt &lt; maxAttempts) {</span>
+                    try {
+<span class="fc" id="L224">                        Thread.sleep(10L * attempt);</span>
+<span class="nc" id="L225">                    } catch (InterruptedException ie) {</span>
+<span class="nc" id="L226">                        Thread.currentThread().interrupt();</span>
+<span class="nc" id="L227">                        throw new RuntimeException(&quot;Interrupted during database transaction retry&quot;, ie);</span>
+<span class="fc" id="L228">                    }</span>
+                }
+            }
+        }
+
+<span class="fc" id="L233">        throw new IllegalStateException(&quot;Failed to ingest audit event after &quot; + maxAttempts + &quot; database transaction retries&quot;, lastException);</span>
+    }
+
+    private void validatePayloadLimits(String payloadJson, CreateEventRequest request) {
+<span class="fc bfc" id="L237" title="All 2 branches covered.">        if (payloadJson.length() &gt; 256 * 1024) { // 256 KB</span>
+<span class="fc" id="L238">            throw new IllegalArgumentException(&quot;Payload JSON size exceeds maximum allowed limit of 256KB.&quot;);</span>
+        }
+<span class="fc" id="L240">        int depth = calculateJsonDepth(payloadJson);</span>
+<span class="fc bfc" id="L241" title="All 2 branches covered.">        if (depth &gt; 15) {</span>
+<span class="fc" id="L242">            throw new IllegalArgumentException(&quot;JSON payload nesting depth (&quot; + depth + &quot;) exceeds maximum allowed depth of 15.&quot;);</span>
+        }
+<span class="fc" id="L244">    }</span>
+
+    private int calculateJsonDepth(String json) {
+<span class="fc" id="L247">        int maxDepth = 0;</span>
+<span class="fc" id="L248">        int currentDepth = 0;</span>
+<span class="fc bfc" id="L249" title="All 2 branches covered.">        for (char c : json.toCharArray()) {</span>
+<span class="pc bpc" id="L250" title="1 of 4 branches missed.">            if (c == '{' || c == '[') {</span>
+<span class="fc" id="L251">                currentDepth++;</span>
+<span class="pc bpc" id="L252" title="1 of 2 branches missed.">                if (currentDepth &gt; maxDepth) maxDepth = currentDepth;</span>
+<span class="pc bpc" id="L253" title="1 of 4 branches missed.">            } else if (c == '}' || c == ']') {</span>
+<span class="fc" id="L254">                currentDepth--;</span>
+            }
+        }
+<span class="fc" id="L257">        return maxDepth;</span>
     }
 
     /**
@@ -120,43 +272,43 @@ public class AuditLogService {
             int page,
             int size
     ) {
-<span class="pc bpc" id="L123" title="2 of 6 branches missed.">        if (from != null &amp;&amp; to != null &amp;&amp; from.isAfter(to)) {</span>
-<span class="fc" id="L124">            throw new IllegalArgumentException(&quot;'from' timestamp cannot be after 'to' timestamp.&quot;);</span>
+<span class="pc bpc" id="L275" title="2 of 6 branches missed.">        if (from != null &amp;&amp; to != null &amp;&amp; from.isAfter(to)) {</span>
+<span class="fc" id="L276">            throw new IllegalArgumentException(&quot;'from' timestamp cannot be after 'to' timestamp.&quot;);</span>
         }
 
-<span class="fc" id="L127">        int boundedPage = Math.max(page, 0);</span>
-<span class="fc" id="L128">        int boundedSize = Math.min(Math.max(size, 1), 100);</span>
+<span class="fc" id="L279">        int boundedPage = Math.max(page, 0);</span>
+<span class="fc" id="L280">        int boundedSize = Math.min(Math.max(size, 1), 100);</span>
 
-<span class="fc" id="L130">        Specification&lt;AuditRecord&gt; spec = (root, query, cb) -&gt; {</span>
-<span class="fc" id="L131">            List&lt;Predicate&gt; predicates = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L282">        Specification&lt;AuditRecord&gt; spec = (root, query, cb) -&gt; {</span>
+<span class="fc" id="L283">            List&lt;Predicate&gt; predicates = new ArrayList&lt;&gt;();</span>
 
-<span class="pc bpc" id="L133" title="1 of 4 branches missed.">            if (actorId != null &amp;&amp; !actorId.trim().isEmpty()) {</span>
-<span class="fc" id="L134">                predicates.add(cb.equal(root.get(&quot;actorId&quot;), actorId));</span>
+<span class="pc bpc" id="L285" title="1 of 4 branches missed.">            if (actorId != null &amp;&amp; !actorId.trim().isEmpty()) {</span>
+<span class="fc" id="L286">                predicates.add(cb.equal(root.get(&quot;actorId&quot;), actorId));</span>
             }
-<span class="pc bpc" id="L136" title="3 of 4 branches missed.">            if (resourceType != null &amp;&amp; !resourceType.trim().isEmpty()) {</span>
-<span class="nc" id="L137">                predicates.add(cb.equal(root.get(&quot;resourceType&quot;), resourceType));</span>
+<span class="pc bpc" id="L288" title="3 of 4 branches missed.">            if (resourceType != null &amp;&amp; !resourceType.trim().isEmpty()) {</span>
+<span class="nc" id="L289">                predicates.add(cb.equal(root.get(&quot;resourceType&quot;), resourceType));</span>
             }
-<span class="pc bpc" id="L139" title="3 of 4 branches missed.">            if (resourceId != null &amp;&amp; !resourceId.trim().isEmpty()) {</span>
-<span class="nc" id="L140">                predicates.add(cb.equal(root.get(&quot;resourceId&quot;), resourceId));</span>
+<span class="pc bpc" id="L291" title="3 of 4 branches missed.">            if (resourceId != null &amp;&amp; !resourceId.trim().isEmpty()) {</span>
+<span class="nc" id="L292">                predicates.add(cb.equal(root.get(&quot;resourceId&quot;), resourceId));</span>
             }
-<span class="pc bpc" id="L142" title="3 of 4 branches missed.">            if (eventType != null &amp;&amp; !eventType.trim().isEmpty()) {</span>
-<span class="nc" id="L143">                predicates.add(cb.equal(root.get(&quot;eventType&quot;), eventType));</span>
+<span class="pc bpc" id="L294" title="3 of 4 branches missed.">            if (eventType != null &amp;&amp; !eventType.trim().isEmpty()) {</span>
+<span class="nc" id="L295">                predicates.add(cb.equal(root.get(&quot;eventType&quot;), eventType));</span>
             }
-<span class="pc bpc" id="L145" title="1 of 2 branches missed.">            if (from != null) {</span>
-<span class="nc" id="L146">                predicates.add(cb.greaterThanOrEqualTo(root.get(&quot;timestamp&quot;), from));</span>
+<span class="pc bpc" id="L297" title="1 of 2 branches missed.">            if (from != null) {</span>
+<span class="nc" id="L298">                predicates.add(cb.greaterThanOrEqualTo(root.get(&quot;timestamp&quot;), from));</span>
             }
-<span class="pc bpc" id="L148" title="1 of 2 branches missed.">            if (to != null) {</span>
-<span class="nc" id="L149">                predicates.add(cb.lessThanOrEqualTo(root.get(&quot;timestamp&quot;), to));</span>
+<span class="pc bpc" id="L300" title="1 of 2 branches missed.">            if (to != null) {</span>
+<span class="nc" id="L301">                predicates.add(cb.lessThanOrEqualTo(root.get(&quot;timestamp&quot;), to));</span>
             }
-<span class="pc bpc" id="L151" title="2 of 4 branches missed.">            if (includeArchived == null || !includeArchived) {</span>
-<span class="fc" id="L152">                predicates.add(cb.equal(root.get(&quot;archived&quot;), false));</span>
+<span class="pc bpc" id="L303" title="2 of 4 branches missed.">            if (includeArchived == null || !includeArchived) {</span>
+<span class="fc" id="L304">                predicates.add(cb.equal(root.get(&quot;archived&quot;), false));</span>
             }
 
-<span class="fc" id="L155">            return cb.and(predicates.toArray(new Predicate[0]));</span>
+<span class="fc" id="L307">            return cb.and(predicates.toArray(new Predicate[0]));</span>
         };
 
-<span class="fc" id="L158">        Pageable pageable = PageRequest.of(boundedPage, boundedSize, Sort.by(Sort.Direction.DESC, &quot;sequenceNumber&quot;));</span>
-<span class="fc" id="L159">        return repository.findAll(spec, pageable);</span>
+<span class="fc" id="L310">        Pageable pageable = PageRequest.of(boundedPage, boundedSize, Sort.by(Sort.Direction.DESC, &quot;sequenceNumber&quot;));</span>
+<span class="fc" id="L311">        return repository.findAll(spec, pageable);</span>
     }
 
     /**
@@ -165,100 +317,216 @@ public class AuditLogService {
      */
     @Transactional(readOnly = true)
     public VerificationResult verifyChain() {
-<span class="fc" id="L168">        List&lt;AuditRecord&gt; records = repository.findAllByOrderBySequenceNumberAsc();</span>
-<span class="fc" id="L169">        VerificationResult result = VerificationResult.builder()</span>
-<span class="fc" id="L170">                .intact(true)</span>
-<span class="fc" id="L171">                .totalRecordsChecked(records.size())</span>
-<span class="fc bfc" id="L172" title="All 2 branches covered.">                .activeRecordsChecked(records.stream().filter(r -&gt; !r.isArchived()).count())</span>
-<span class="fc" id="L173">                .archivedRecordsChecked(records.stream().filter(AuditRecord::isArchived).count())</span>
-<span class="fc" id="L174">                .violations(new ArrayList&lt;&gt;())</span>
-<span class="fc" id="L175">                .build();</span>
+<span class="fc" id="L320">        List&lt;AuditRecord&gt; records = repository.findAllByOrderBySequenceNumberAsc();</span>
+<span class="fc" id="L321">        VerificationResult result = VerificationResult.builder()</span>
+<span class="fc" id="L322">                .intact(true)</span>
+<span class="fc" id="L323">                .totalRecordsChecked(records.size())</span>
+<span class="fc bfc" id="L324" title="All 2 branches covered.">                .activeRecordsChecked(records.stream().filter(r -&gt; !r.isArchived()).count())</span>
+<span class="fc" id="L325">                .archivedRecordsChecked(records.stream().filter(AuditRecord::isArchived).count())</span>
+<span class="fc" id="L326">                .violations(new ArrayList&lt;&gt;())</span>
+<span class="fc" id="L327">                .build();</span>
 
-<span class="pc bpc" id="L177" title="1 of 2 branches missed.">        if (records.isEmpty()) {</span>
-<span class="nc" id="L178">            result.setStatusMessage(&quot;Audit trail is empty. Chain is intact.&quot;);</span>
-<span class="nc" id="L179">            return result;</span>
+<span class="pc bpc" id="L329" title="1 of 2 branches missed.">        if (records.isEmpty()) {</span>
+<span class="nc" id="L330">            result.setStatusMessage(&quot;Audit trail is empty. Chain is intact.&quot;);</span>
+<span class="nc" id="L331">            return result;</span>
         }
 
-<span class="fc" id="L182">        String expectedPreviousHash = AuditRecord.GENESIS_HASH;</span>
-<span class="fc" id="L183">        long expectedSequence = 1L;</span>
+<span class="fc" id="L334">        String expectedPreviousHash = AuditRecord.GENESIS_HASH;</span>
+<span class="fc" id="L335">        long expectedSequence = 1L;</span>
 
-<span class="fc bfc" id="L185" title="All 2 branches covered.">        for (int i = 0; i &lt; records.size(); i++) {</span>
-<span class="fc" id="L186">            AuditRecord current = records.get(i);</span>
-<span class="fc" id="L187">            boolean recordIntact = true;</span>
+<span class="fc bfc" id="L337" title="All 2 branches covered.">        for (int i = 0; i &lt; records.size(); i++) {</span>
+<span class="fc" id="L338">            AuditRecord current = records.get(i);</span>
 
             // 1. Verify sequence continuity
-<span class="pc bpc" id="L190" title="1 of 2 branches missed.">            if (!current.getSequenceNumber().equals(expectedSequence)) {</span>
-<span class="nc" id="L191">                result.setIntact(false);</span>
-<span class="nc" id="L192">                result.getViolations().add(ViolationDetail.builder()</span>
-<span class="nc" id="L193">                        .sequenceNumber(current.getSequenceNumber())</span>
-<span class="nc" id="L194">                        .recordId(current.getId())</span>
-<span class="nc" id="L195">                        .violationType(&quot;SEQUENCE_GAP&quot;)</span>
-<span class="nc" id="L196">                        .expectedHash(&quot;Sequence &quot; + expectedSequence)</span>
-<span class="nc" id="L197">                        .actualHash(&quot;Sequence &quot; + current.getSequenceNumber())</span>
-<span class="nc" id="L198">                        .description(&quot;Sequence gap detected. Expected &quot; + expectedSequence + &quot; but found &quot; + current.getSequenceNumber())</span>
-<span class="nc" id="L199">                        .build());</span>
+<span class="pc bpc" id="L341" title="1 of 2 branches missed.">            if (!current.getSequenceNumber().equals(expectedSequence)) {</span>
+<span class="nc" id="L342">                result.setIntact(false);</span>
+<span class="nc" id="L343">                result.getViolations().add(ViolationDetail.builder()</span>
+<span class="nc" id="L344">                        .sequenceNumber(current.getSequenceNumber())</span>
+<span class="nc" id="L345">                        .recordId(current.getId())</span>
+<span class="nc" id="L346">                        .violationType(&quot;SEQUENCE_GAP&quot;)</span>
+<span class="nc" id="L347">                        .expectedHash(&quot;Sequence &quot; + expectedSequence)</span>
+<span class="nc" id="L348">                        .actualHash(&quot;Sequence &quot; + current.getSequenceNumber())</span>
+<span class="nc" id="L349">                        .description(&quot;Sequence gap detected. Expected &quot; + expectedSequence + &quot; but found &quot; + current.getSequenceNumber())</span>
+<span class="nc" id="L350">                        .build());</span>
             }
 
             // 2. Verify previousHash chain link
-<span class="fc bfc" id="L203" title="All 2 branches covered.">            if (!current.getPreviousHash().equalsIgnoreCase(expectedPreviousHash)) {</span>
-<span class="fc" id="L204">                result.setIntact(false);</span>
-<span class="fc" id="L205">                result.getViolations().add(ViolationDetail.builder()</span>
-<span class="fc" id="L206">                        .sequenceNumber(current.getSequenceNumber())</span>
-<span class="fc" id="L207">                        .recordId(current.getId())</span>
-<span class="fc" id="L208">                        .violationType(&quot;PREVIOUS_HASH_MISMATCH&quot;)</span>
-<span class="fc" id="L209">                        .expectedHash(expectedPreviousHash)</span>
-<span class="fc" id="L210">                        .actualHash(current.getPreviousHash())</span>
-<span class="fc" id="L211">                        .description(&quot;Chain link broken at record #&quot; + current.getSequenceNumber() + &quot;. Previous hash does not match prior record hash.&quot;)</span>
-<span class="fc" id="L212">                        .build());</span>
+<span class="fc bfc" id="L354" title="All 2 branches covered.">            if (!current.getPreviousHash().equalsIgnoreCase(expectedPreviousHash)) {</span>
+<span class="fc" id="L355">                result.setIntact(false);</span>
+<span class="fc" id="L356">                result.getViolations().add(ViolationDetail.builder()</span>
+<span class="fc" id="L357">                        .sequenceNumber(current.getSequenceNumber())</span>
+<span class="fc" id="L358">                        .recordId(current.getId())</span>
+<span class="fc" id="L359">                        .violationType(&quot;PREVIOUS_HASH_MISMATCH&quot;)</span>
+<span class="fc" id="L360">                        .expectedHash(expectedPreviousHash)</span>
+<span class="fc" id="L361">                        .actualHash(current.getPreviousHash())</span>
+<span class="fc" id="L362">                        .description(&quot;Chain link broken at record #&quot; + current.getSequenceNumber() + &quot;. Previous hash does not match prior record hash.&quot;)</span>
+<span class="fc" id="L363">                        .build());</span>
             }
 
             // 3. Recompute record hash and verify integrity for all records (active and archived)
             try {
-<span class="fc" id="L217">                String calculatedHash = hashChainEngine.calculateRecordHash(current);</span>
-<span class="fc bfc" id="L218" title="All 2 branches covered.">                if (!calculatedHash.equalsIgnoreCase(current.getRecordHash())) {</span>
-<span class="fc" id="L219">                    result.setIntact(false);</span>
-<span class="fc" id="L220">                    result.getViolations().add(ViolationDetail.builder()</span>
-<span class="fc" id="L221">                            .sequenceNumber(current.getSequenceNumber())</span>
-<span class="fc" id="L222">                            .recordId(current.getId())</span>
-<span class="fc" id="L223">                            .violationType(&quot;HASH_MISMATCH&quot;)</span>
-<span class="fc" id="L224">                            .expectedHash(calculatedHash)</span>
-<span class="fc" id="L225">                            .actualHash(current.getRecordHash())</span>
-<span class="fc" id="L226">                            .description(&quot;Record content tampered at sequence #&quot; + current.getSequenceNumber() + &quot;. Recomputed hash differs from stored record hash.&quot;)</span>
-<span class="fc" id="L227">                            .build());</span>
+<span class="fc" id="L368">                String calculatedHash = hashChainEngine.calculateRecordHash(current);</span>
+<span class="fc bfc" id="L369" title="All 2 branches covered.">                if (!calculatedHash.equalsIgnoreCase(current.getRecordHash())) {</span>
+<span class="fc" id="L370">                    result.setIntact(false);</span>
+<span class="fc" id="L371">                    result.getViolations().add(ViolationDetail.builder()</span>
+<span class="fc" id="L372">                            .sequenceNumber(current.getSequenceNumber())</span>
+<span class="fc" id="L373">                            .recordId(current.getId())</span>
+<span class="fc" id="L374">                            .violationType(&quot;HASH_MISMATCH&quot;)</span>
+<span class="fc" id="L375">                            .expectedHash(calculatedHash)</span>
+<span class="fc" id="L376">                            .actualHash(current.getRecordHash())</span>
+<span class="fc" id="L377">                            .description(&quot;Record content tampered at sequence #&quot; + current.getSequenceNumber() + &quot;. Recomputed hash differs from stored record hash.&quot;)</span>
+<span class="fc" id="L378">                            .build());</span>
                 }
-<span class="fc" id="L229">            } catch (IllegalArgumentException | IllegalStateException ex) {</span>
-<span class="fc" id="L230">                result.setIntact(false);</span>
-<span class="fc" id="L231">                result.getViolations().add(ViolationDetail.builder()</span>
-<span class="fc" id="L232">                        .sequenceNumber(current.getSequenceNumber())</span>
-<span class="fc" id="L233">                        .recordId(current.getId())</span>
-<span class="fc" id="L234">                        .violationType(&quot;MALFORMED_CONTENT&quot;)</span>
-<span class="fc" id="L235">                        .expectedHash(&quot;Valid Canonical JSON&quot;)</span>
-<span class="fc" id="L236">                        .actualHash(&quot;MALFORMED&quot;)</span>
-<span class="fc" id="L237">                        .description(&quot;Record payload or redaction metadata corrupted at sequence #&quot; + current.getSequenceNumber() + &quot;: &quot; + ex.getMessage())</span>
-<span class="fc" id="L238">                        .build());</span>
-<span class="nc" id="L239">            } catch (Exception ex) {</span>
-<span class="nc" id="L240">                result.setIntact(false);</span>
-<span class="nc" id="L241">                result.getViolations().add(ViolationDetail.builder()</span>
-<span class="nc" id="L242">                        .sequenceNumber(current.getSequenceNumber())</span>
-<span class="nc" id="L243">                        .recordId(current.getId())</span>
-<span class="nc" id="L244">                        .violationType(&quot;MALFORMED_CONTENT&quot;)</span>
-<span class="nc" id="L245">                        .expectedHash(&quot;Valid Canonical JSON&quot;)</span>
-<span class="nc" id="L246">                        .actualHash(&quot;MALFORMED&quot;)</span>
-<span class="nc" id="L247">                        .description(&quot;Record payload or redaction metadata corrupted at sequence #&quot; + current.getSequenceNumber() + &quot;: &quot; + ex.getMessage())</span>
-<span class="nc" id="L248">                        .build());</span>
-<span class="fc" id="L249">            }</span>
+<span class="fc" id="L380">            } catch (Exception ex) {</span>
+<span class="fc" id="L381">                result.setIntact(false);</span>
+<span class="fc" id="L382">                result.getViolations().add(ViolationDetail.builder()</span>
+<span class="fc" id="L383">                        .sequenceNumber(current.getSequenceNumber())</span>
+<span class="fc" id="L384">                        .recordId(current.getId())</span>
+<span class="fc" id="L385">                        .violationType(&quot;MALFORMED_CONTENT&quot;)</span>
+<span class="fc" id="L386">                        .expectedHash(&quot;Valid Canonical JSON&quot;)</span>
+<span class="fc" id="L387">                        .actualHash(&quot;MALFORMED&quot;)</span>
+<span class="fc" id="L388">                        .description(&quot;Record payload or redaction metadata corrupted at sequence #&quot; + current.getSequenceNumber() + &quot;: &quot; + ex.getMessage())</span>
+<span class="fc" id="L389">                        .build());</span>
+<span class="fc" id="L390">            }</span>
 
-<span class="fc" id="L251">            expectedPreviousHash = current.getRecordHash();</span>
-<span class="fc" id="L252">            expectedSequence++;</span>
+<span class="fc" id="L392">            expectedPreviousHash = current.getRecordHash();</span>
+<span class="fc" id="L393">            expectedSequence++;</span>
         }
 
-<span class="fc bfc" id="L255" title="All 2 branches covered.">        if (result.isIntact()) {</span>
-<span class="fc" id="L256">            result.setStatusMessage(&quot;Audit log hash chain is 100% INTACT. All &quot; + records.size() + &quot; records cryptographically verified.&quot;);</span>
+<span class="fc bfc" id="L396" title="All 2 branches covered.">        if (result.isIntact()) {</span>
+<span class="fc" id="L397">            result.setStatusMessage(&quot;Audit log hash chain is 100% INTACT. All &quot; + records.size() + &quot; records cryptographically verified.&quot;);</span>
         } else {
-<span class="fc" id="L258">            result.setStatusMessage(&quot;SECURITY ALERT: Cryptographic chain verification FAILED! Detected &quot; + result.getViolations().size() + &quot; violation(s).&quot;);</span>
+<span class="fc" id="L399">            result.setStatusMessage(&quot;SECURITY ALERT: Cryptographic chain verification FAILED! Detected &quot; + result.getViolations().size() + &quot; violation(s).&quot;);</span>
+<span class="fc" id="L400">            securityEventLogger.logSecurityEvent(</span>
+                    SecurityEventLogger.EventCategory.INTEGRITY_VERIFICATION_FAILURE,
+                    &quot;SYSTEM_VERIFIER&quot;,
+                    &quot;VERIFY_CHAIN&quot;,
+                    &quot;AUDIT_CHAIN&quot;,
+                    &quot;FAILED&quot;,
+<span class="fc" id="L406">                    &quot;Cryptographic chain verification failed with &quot; + result.getViolations().size() + &quot; violations&quot;,</span>
+<span class="fc" id="L407">                    Map.of(&quot;violationCount&quot;, result.getViolations().size())</span>
+            );
         }
 
-<span class="fc" id="L261">        return result;</span>
+<span class="fc" id="L411">        return result;</span>
+    }
+
+    /**
+     * External Chain Head Checkpoint / Anchor Creator (Phase 2).
+     */
+    @Transactional
+    public ChainCheckpoint createCheckpoint() {
+<span class="fc" id="L419">        Optional&lt;AuditRecord&gt; headRecordOpt = repository.findTopByOrderBySequenceNumberDesc();</span>
+<span class="pc bpc" id="L420" title="1 of 2 branches missed.">        if (headRecordOpt.isEmpty()) {</span>
+<span class="nc" id="L421">            throw new IllegalStateException(&quot;Cannot create checkpoint: Audit log repository is empty.&quot;);</span>
+        }
+
+<span class="fc" id="L424">        AuditRecord headRecord = headRecordOpt.get();</span>
+<span class="fc" id="L425">        Instant checkpointTimestamp = Instant.now().truncatedTo(ChronoUnit.MILLIS);</span>
+<span class="fc" id="L426">        String checkpointId = &quot;CHK-&quot; + UUID.randomUUID().toString();</span>
+<span class="fc" id="L427">        String version = &quot;v1.0&quot;;</span>
+
+<span class="fc" id="L429">        String signaturePayload = headRecord.getSequenceNumber() + &quot;|&quot; + headRecord.getRecordHash() + &quot;|&quot; + checkpointTimestamp.toString() + &quot;|&quot; + version;</span>
+<span class="fc" id="L430">        String signature = hashChainEngine.hmacSha256(signaturePayload);</span>
+
+<span class="fc" id="L432">        ChainCheckpoint checkpoint = ChainCheckpoint.builder()</span>
+<span class="fc" id="L433">                .checkpointId(checkpointId)</span>
+<span class="fc" id="L434">                .headSequenceNumber(headRecord.getSequenceNumber())</span>
+<span class="fc" id="L435">                .headRecordHash(headRecord.getRecordHash())</span>
+<span class="fc" id="L436">                .checkpointTimestamp(checkpointTimestamp)</span>
+<span class="fc" id="L437">                .checkpointVersion(version)</span>
+<span class="fc" id="L438">                .signature(signature)</span>
+<span class="fc" id="L439">                .status(&quot;VALID&quot;)</span>
+<span class="fc" id="L440">                .build();</span>
+
+<span class="fc" id="L442">        ChainCheckpoint saved = checkpointRepository.save(checkpoint);</span>
+
+<span class="fc" id="L444">        securityEventLogger.logSecurityEvent(</span>
+                SecurityEventLogger.EventCategory.CHECKPOINT_EVENT,
+                &quot;SYSTEM_CHECKPOINT_SERVICE&quot;,
+                &quot;CREATE_CHECKPOINT&quot;,
+                &quot;CHAIN_HEAD&quot;,
+                &quot;SUCCESS&quot;,
+<span class="fc" id="L450">                &quot;Created external chain head checkpoint at sequence #&quot; + headRecord.getSequenceNumber(),</span>
+<span class="fc" id="L451">                Map.of(&quot;checkpointId&quot;, checkpointId, &quot;headSequence&quot;, headRecord.getSequenceNumber(), &quot;headHash&quot;, headRecord.getRecordHash())</span>
+        );
+
+<span class="fc" id="L454">        return saved;</span>
+    }
+
+    /**
+     * External Checkpoint Verification Engine (Phase 2).
+     */
+    @Transactional(readOnly = true)
+    public VerificationResult verifyCheckpoint(String checkpointId) {
+<span class="fc" id="L462">        ChainCheckpoint checkpoint = checkpointRepository.findByCheckpointId(checkpointId)</span>
+<span class="fc" id="L463">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Checkpoint not found with ID: &quot; + checkpointId));</span>
+
+<span class="fc" id="L465">        VerificationResult result = VerificationResult.builder()</span>
+<span class="fc" id="L466">                .intact(true)</span>
+<span class="fc" id="L467">                .totalRecordsChecked(checkpoint.getHeadSequenceNumber().intValue())</span>
+<span class="fc" id="L468">                .violations(new ArrayList&lt;&gt;())</span>
+<span class="fc" id="L469">                .build();</span>
+
+        // 1. Verify Checkpoint HMAC signature
+<span class="fc" id="L472">        String signaturePayload = checkpoint.getHeadSequenceNumber() + &quot;|&quot; + checkpoint.getHeadRecordHash() + &quot;|&quot; + checkpoint.getCheckpointTimestamp().toString() + &quot;|&quot; + checkpoint.getCheckpointVersion();</span>
+<span class="fc" id="L473">        String expectedSignature = hashChainEngine.hmacSha256(signaturePayload);</span>
+
+<span class="fc bfc" id="L475" title="All 2 branches covered.">        if (!expectedSignature.equals(checkpoint.getSignature())) {</span>
+<span class="fc" id="L476">            result.setIntact(false);</span>
+<span class="fc" id="L477">            result.getViolations().add(ViolationDetail.builder()</span>
+<span class="fc" id="L478">                    .sequenceNumber(checkpoint.getHeadSequenceNumber())</span>
+<span class="fc" id="L479">                    .violationType(&quot;CHECKPOINT_SIGNATURE_TAMPERED&quot;)</span>
+<span class="fc" id="L480">                    .expectedHash(expectedSignature)</span>
+<span class="fc" id="L481">                    .actualHash(checkpoint.getSignature())</span>
+<span class="fc" id="L482">                    .description(&quot;External checkpoint signature is invalid or tampered.&quot;)</span>
+<span class="fc" id="L483">                    .build());</span>
+        }
+
+        // 2. Verify Database Chain Head matches Checkpoint
+<span class="fc" id="L487">        Optional&lt;AuditRecord&gt; dbHeadOpt = repository.findTopByOrderBySequenceNumberDesc();</span>
+<span class="pc bpc" id="L488" title="2 of 4 branches missed.">        if (dbHeadOpt.isEmpty() || dbHeadOpt.get().getSequenceNumber() &lt; checkpoint.getHeadSequenceNumber()) {</span>
+<span class="nc" id="L489">            result.setIntact(false);</span>
+<span class="nc" id="L490">            result.getViolations().add(ViolationDetail.builder()</span>
+<span class="nc" id="L491">                    .sequenceNumber(checkpoint.getHeadSequenceNumber())</span>
+<span class="nc" id="L492">                    .violationType(&quot;CHECKPOINT_HEAD_MISMATCH&quot;)</span>
+<span class="nc" id="L493">                    .expectedHash(&quot;Sequence &quot; + checkpoint.getHeadSequenceNumber())</span>
+<span class="nc" id="L494">                    .actualHash(dbHeadOpt.map(r -&gt; &quot;Sequence &quot; + r.getSequenceNumber()).orElse(&quot;EMPTY&quot;))</span>
+<span class="nc" id="L495">                    .description(&quot;Database audit chain is missing records up to checkpoint head sequence #&quot; + checkpoint.getHeadSequenceNumber())</span>
+<span class="nc" id="L496">                    .build());</span>
+<span class="nc" id="L497">            return result;</span>
+        }
+
+<span class="fc" id="L500">        AuditRecord targetRecord = repository.findAllByOrderBySequenceNumberAsc().stream()</span>
+<span class="fc" id="L501">                .filter(r -&gt; r.getSequenceNumber().equals(checkpoint.getHeadSequenceNumber()))</span>
+<span class="fc" id="L502">                .findFirst()</span>
+<span class="fc" id="L503">                .orElse(null);</span>
+
+<span class="pc bpc" id="L505" title="2 of 4 branches missed.">        if (targetRecord == null || !targetRecord.getRecordHash().equals(checkpoint.getHeadRecordHash())) {</span>
+<span class="nc" id="L506">            result.setIntact(false);</span>
+<span class="nc" id="L507">            result.getViolations().add(ViolationDetail.builder()</span>
+<span class="nc" id="L508">                    .sequenceNumber(checkpoint.getHeadSequenceNumber())</span>
+<span class="nc" id="L509">                    .violationType(&quot;CHECKPOINT_HASH_MISMATCH&quot;)</span>
+<span class="nc" id="L510">                    .expectedHash(checkpoint.getHeadRecordHash())</span>
+<span class="nc bnc" id="L511" title="All 2 branches missed.">                    .actualHash(targetRecord != null ? targetRecord.getRecordHash() : &quot;NOT_FOUND&quot;)</span>
+<span class="nc" id="L512">                    .description(&quot;Database record hash at sequence #&quot; + checkpoint.getHeadSequenceNumber() + &quot; does not match external checkpoint anchor hash.&quot;)</span>
+<span class="nc" id="L513">                    .build());</span>
+        }
+
+        // 3. Verify underlying hash chain integrity
+<span class="fc" id="L517">        VerificationResult chainResult = verifyChain();</span>
+<span class="fc bfc" id="L518" title="All 2 branches covered.">        if (!chainResult.isIntact()) {</span>
+<span class="fc" id="L519">            result.setIntact(false);</span>
+<span class="fc" id="L520">            result.getViolations().addAll(chainResult.getViolations());</span>
+        }
+
+<span class="fc bfc" id="L523" title="All 2 branches covered.">        if (result.isIntact()) {</span>
+<span class="fc" id="L524">            result.setStatusMessage(&quot;External Checkpoint '&quot; + checkpointId + &quot;' verified successfully. Audit chain up to sequence #&quot; + checkpoint.getHeadSequenceNumber() + &quot; is intact.&quot;);</span>
+        } else {
+<span class="fc" id="L526">            result.setStatusMessage(&quot;SECURITY ALERT: External Checkpoint verification FAILED!&quot;);</span>
+        }
+
+<span class="fc" id="L529">        return result;</span>
     }
 
     /**
@@ -266,22 +534,21 @@ public class AuditLogService {
      */
     @Transactional
     public AuditRecord simulateTampering(Long recordId, String tamperedPayload, String tamperedActorId) {
-<span class="fc" id="L269">        AuditRecord record = repository.findById(recordId)</span>
-<span class="pc" id="L270">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Audit record not found with ID: &quot; + recordId));</span>
+<span class="fc" id="L537">        AuditRecord record = repository.findById(recordId)</span>
+<span class="pc" id="L538">                .orElseThrow(() -&gt; new IllegalArgumentException(&quot;Audit record not found with ID: &quot; + recordId));</span>
 
-<span class="fc bfc" id="L272" title="All 2 branches covered.">        if (tamperedPayload != null) {</span>
-<span class="fc" id="L273">            record.setPayloadJson(tamperedPayload);</span>
+<span class="fc bfc" id="L540" title="All 2 branches covered.">        if (tamperedPayload != null) {</span>
+<span class="fc" id="L541">            record.setPayloadJson(tamperedPayload);</span>
         }
-<span class="fc bfc" id="L275" title="All 2 branches covered.">        if (tamperedActorId != null) {</span>
-<span class="fc" id="L276">            record.setActorId(tamperedActorId);</span>
+<span class="fc bfc" id="L543" title="All 2 branches covered.">        if (tamperedActorId != null) {</span>
+<span class="fc" id="L544">            record.setActorId(tamperedActorId);</span>
         }
 
-        // Intentionally save WITHOUT updating stored recordHash to simulate direct database corruption/tampering
-<span class="fc" id="L280">        return repository.save(record);</span>
+<span class="fc" id="L547">        return repository.save(record);</span>
     }
 
     public Optional&lt;AuditRecord&gt; getById(Long id) {
-<span class="fc" id="L284">        return repository.findById(id);</span>
+<span class="fc" id="L551">        return repository.findById(id);</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

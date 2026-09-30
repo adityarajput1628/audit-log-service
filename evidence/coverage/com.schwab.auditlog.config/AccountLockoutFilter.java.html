@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AccountLockoutFilter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">audit-log-service</a> &gt; <a href="index.source.html" class="el_package">com.schwab.auditlog.config</a> &gt; <span class="el_source">AccountLockoutFilter.java</span></div><h1>AccountLockoutFilter.java</h1><pre class="source lang-java linenums">package com.schwab.auditlog.config;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.schwab.auditlog.security.AccountLockoutService;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Base64;
+import java.util.Map;
+
+/**
+ * Filter checking for locked out usernames before authenticating requests.
+ * Returns HTTP 423 Locked when a username has 5 consecutive failed authentication attempts.
+ */
+@Component
+public class AccountLockoutFilter extends OncePerRequestFilter {
+
+    private final AccountLockoutService lockoutService;
+<span class="fc" id="L28">    private final ObjectMapper objectMapper = new ObjectMapper();</span>
+
+<span class="fc" id="L30">    public AccountLockoutFilter(AccountLockoutService lockoutService) {</span>
+<span class="fc" id="L31">        this.lockoutService = lockoutService;</span>
+<span class="fc" id="L32">    }</span>
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
+
+<span class="fc" id="L38">        String authHeader = request.getHeader(&quot;Authorization&quot;);</span>
+<span class="pc bpc" id="L39" title="1 of 4 branches missed.">        if (authHeader != null &amp;&amp; authHeader.startsWith(&quot;Basic &quot;)) {</span>
+<span class="fc" id="L40">            String username = extractUsername(authHeader);</span>
+<span class="pc bpc" id="L41" title="1 of 4 branches missed.">            if (username != null &amp;&amp; lockoutService.isLocked(username)) {</span>
+<span class="fc" id="L42">                response.setStatus(HttpStatus.LOCKED.value()); // 423</span>
+<span class="fc" id="L43">                response.setContentType(MediaType.APPLICATION_JSON_VALUE);</span>
+<span class="fc" id="L44">                Map&lt;String, Object&gt; errorDetails = Map.of(</span>
+<span class="fc" id="L45">                        &quot;timestamp&quot;, Instant.now().toString(),</span>
+<span class="fc" id="L46">                        &quot;status&quot;, 423,</span>
+                        &quot;error&quot;, &quot;Locked&quot;,
+                        &quot;message&quot;, &quot;Account locked due to 5 consecutive failed authentication attempts. Please try again after 15 minutes.&quot;,
+<span class="fc" id="L49">                        &quot;path&quot;, request.getRequestURI()</span>
+                );
+<span class="fc" id="L51">                objectMapper.writeValue(response.getOutputStream(), errorDetails);</span>
+<span class="fc" id="L52">                return;</span>
+            }
+        }
+
+<span class="fc" id="L56">        filterChain.doFilter(request, response);</span>
+<span class="fc" id="L57">    }</span>
+
+    private String extractUsername(String authHeader) {
+        try {
+<span class="fc" id="L61">            String base64Credentials = authHeader.substring(6).trim();</span>
+<span class="fc" id="L62">            byte[] credBytes = Base64.getDecoder().decode(base64Credentials);</span>
+<span class="fc" id="L63">            String credentials = new String(credBytes, StandardCharsets.UTF_8);</span>
+<span class="fc" id="L64">            String[] values = credentials.split(&quot;:&quot;, 2);</span>
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">            return values.length &gt; 0 ? values[0] : null;</span>
+<span class="nc" id="L66">        } catch (Exception e) {</span>
+<span class="nc" id="L67">            return null;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

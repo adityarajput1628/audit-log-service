@@ -163,6 +163,7 @@ Where:
 ### Limitations & Trade-Offs
 - **$O(N)$ Verification Walk**: Verification engine performs a linear database walk, optimized by periodic Merkle root checkpointing (`POST /checkpoint`).
 - **Database Support**: Built for PostgreSQL and ANSI SQL standard, using Flyway migrations for schema evolution. Tests run on H2 with pessimistic locking and skipped PostgreSQL Testcontainers when Docker is absent.
+- **Authentication Scope**: Multi-Factor Authentication (MFA) and automatic credential expiration policies are intentionally not implemented in this service context and should be enforced upstream at the API gateway / IAM layer.
 
 ---
 

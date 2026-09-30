@@ -196,6 +196,16 @@ public class AuditLogService {
                     AuditRecord savedRecord = repository.saveAndFlush(newRecord);
 
                     if (cleanedIdempotencyKey != null) {
+                        Optional<IdempotencyRecord> checkAgain = idempotencyRepository.findByIdempotencyKey(cleanedIdempotencyKey);
+                        if (checkAgain.isPresent()) {
+                            IdempotencyRecord existing = checkAgain.get();
+                            status.setRollbackOnly();
+                            if (existing.getRequestHash().equals(requestHash)) {
+                                return repository.findById(existing.getAuditRecordId()).orElse(savedRecord);
+                            } else {
+                                throw new IllegalArgumentException("Idempotency key collision: provided Idempotency-Key '" + cleanedIdempotencyKey + "' was previously used with a different request payload.");
+                            }
+                        }
                         IdempotencyRecord idempotencyRecord = IdempotencyRecord.builder()
                                 .idempotencyKey(cleanedIdempotencyKey)
                                 .requestHash(requestHash)

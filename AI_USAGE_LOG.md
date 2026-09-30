@@ -81,3 +81,18 @@
   - Truthfully documented PostgreSQL live container execution as **PARTIAL** in `REQUIREMENTS_MATRIX.md` due to Docker daemon unavailability in test execution container.
   - Generated fresh JaCoCo HTML coverage and JUnit test HTML reports into `evidence/coverage/` and `evidence/tests/`.
   - Verified 100% test pass rate across 53 unit/integration test cases.
+
+---
+
+### Final Polish Pass: TLS Enforcement, Account Lockout, Deeper Failure Tests & Portable Attestation Links (`Final Polish Pass`)
+- **Timestamp**: 2026-09-30 10:50:00 UTC+5:30
+- **AI Tool Used**: Antigravity AI (Gemini 3.6 Flash / Advanced Agentic Coding)
+- **Prompt**: Perform final polish pass: enforce TLS fail-fast check in prod profile (`TlsEnforcementConfig`), add HTTP 423 sliding-window Basic Auth Account Lockout (`AccountLockoutService`, `AccountLockoutFilter`), add deeper failure-mode tests to `FailureAndRollbackTest.java` (midway rollback, concurrent idempotency race, pessimistic lock retry exhaustion), update `README.md` limitations, update portable relative file links in `ATTESTATION.md`, and log AI usage.
+- **What Was Done**:
+  - Implemented `TlsEnforcementConfig.java` enforcing fail-fast startup check (`IllegalStateException`) when active profile is `prod` and TLS is disabled without explicit trusted-proxy override (`TRUSTED_PROXY_TLS_TERMINATION=true`).
+  - Added `TlsEnforcementTest.java` asserting context startup failure when booting `prod` profile with SSL disabled.
+  - Implemented `AccountLockoutService.java` and `AccountLockoutFilter.java` locking usernames for 15 minutes returning HTTP 423 Locked after 5 failed authentication attempts within a 15-minute sliding window.
+  - Added `AccountLockoutTest.java` verifying 5 failed login attempts trigger HTTP 423 for that user while other usernames remain unaffected.
+  - Updated `README.md` Limitations section explicitly disclosing MFA and credential expiration scope boundaries.
+  - Added deeper failure-mode tests to `FailureAndRollbackTest.java`: midway transaction rollback safety (Test A), concurrent idempotency key race condition (Test B), and pessimistic-lock retry budget exhaustion throwing `IllegalStateException` (Test C).
+  - Updated `ATTESTATION.md` to use portable, relative repository file links (e.g. `src/main/...`) without absolute local machine file paths.
