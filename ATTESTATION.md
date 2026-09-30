@@ -6,8 +6,8 @@
 - **Repository Branch**: `master`
 - **Assignment Title**: Charles Schwab Audit Log Service – Production System Evaluation
 - **Date Verified**: 2026-09-30
-- **Attested Commit SHA**: `4ecd71fdb8cb6bd2ecf588c222ff4edb75d5b78b` (`4ecd71f`)
-- **Note**: This attestation document was finalized in the commit immediately following the attested commit, since a commit cannot reference its own hash. The attested code, automated scheduler, multi-node tests, and evidence are all from commit `4ecd71f`.
+- **Attested Commit SHA**: `7105caedbaad6bb3e981df523455986927a4d533` (`7105cae`)
+- **Note**: This attestation document was finalized in the commit immediately following the attested commit, since a commit cannot reference its own hash. All code remediations, security filters, automated scheduler, multi-node tests, and JaCoCo coverage reports are consolidated in commit `7105cae`.
 
 > I, Aditya Rajput, attest that this submission is my own individual work, completed on my own machine and accounts, and that it honestly reflects my development process, architectural choices, and transparent use of AI tools.
 
